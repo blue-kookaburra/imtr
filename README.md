@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Is My Train Running?
 
-## Getting Started
+Melbourne train disruptions without the confusion. Two tabs:
 
-First, run the development server:
+- **Map** — schematic network map; segments with no service are blacked out (red hazard dashes = bus replacement, dimmed = outside timetabled hours). Defaults to now; pick any future date/time.
+- **Calendar** — pick a station, see a colour-coded month of disruptions (green normal, amber part-of-day, red buses/closed, grey beyond the four-week forecast).
+
+## How data flows
+
+1. `npm run scrape` (GitHub Actions, every 2 days) pulls the [planned works pages](https://transport.vic.gov.au/plan-a-journey/planned-works) via **curl** — the site's bot protection blocks node/serverless TLS fingerprints — parses the four-week forecast tables and commits `data/disruptions.json`.
+2. The Next.js app bundles that JSON. `/api/status?at=` merges it with baseline service spans (first/last train per day, Night Network Fri/Sat) into per-segment statuses. `/api/station/<id>/calendar` produces per-day station statuses.
+3. Optional: set `PTV_DEV_ID` + `PTV_API_KEY` env vars to overlay live/unplanned disruptions from the PTV Timetable API v3. The app fully works without them.
+
+**Fail-visible principle:** anything the parser can't confidently map to track segments renders as a line-level warning, never as a wrong blackout and never as a false "all clear".
+
+## Develop
 
 ```bash
+npm install
+npm run scrape   # refresh data/disruptions.json (needs curl)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test         # parser fixtures + merge logic
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Push to GitHub, import into Vercel (defaults are fine). The scrape workflow (`.github/workflows/scrape.yml`) commits refreshed data every 2 days, which triggers a redeploy.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Design spec: `docs/superpowers/specs/2026-07-25-is-my-train-running-design.md`.

@@ -53,6 +53,57 @@ describe("planned-works parser", () => {
   });
 });
 
+describe("parser row formats", () => {
+  // Wrap a row in the minimal table + __NEXT_DATA__ shell the parser expects.
+  function page(row: string): string {
+    const table = `<table><tr><td>${row}</td></tr></table>`;
+    const data = { props: { Text: { value: table } } };
+    return `<script id="__NEXT_DATA__" type="application/json">${JSON.stringify(data)}</script>`;
+  }
+
+  it("matches lines from 'X, Y and Z passengers' phrasing", () => {
+    const ds = parsePage(
+      page(
+        "Alamein, Belgrave and Lilydale passengers Sunday 19 July to Wednesday 22 July Buses replace evening trains between Parliament, Alamein and Box Hill."
+      ),
+      REF
+    );
+    expect(ds).toHaveLength(1);
+    expect(ds[0].lineIds.sort()).toEqual(["alamein", "belgrave", "lilydale"]);
+    expect(ds[0].stations).toContain("flinders-street"); // Parliament aliased to city
+    expect(ds[0].stations).toContain("box-hill");
+    expect(ds[0].startMin).toBe(18 * 60); // "evening trains"
+  });
+
+  it("treats sectionless 'Buses replace trains.' as whole-line, parsed", () => {
+    const ds = parsePage(
+      page("Sandringham passengers Friday 24 July to Sunday 26 July Buses replace trains."),
+      REF
+    );
+    expect(ds).toHaveLength(1);
+    expect(ds[0].wholeLine).toBe(true);
+    expect(ds[0].parsed).toBe(true);
+  });
+
+  it("spans multi-branch sections per line", () => {
+    const ds = parsePage(
+      page(
+        "Alamein, Belgrave and Lilydale passengers Sunday 19 July to Wednesday 22 July Buses replace evening trains between Parliament, Alamein and Box Hill."
+      ),
+      REF
+    );
+    const status = computeStatus(ds, new Date("2026-07-20T10:00:00Z"), REF.toISOString());
+    // 8pm Melbourne on the 20th — evening window active
+    const alameinBranch = status.segments.find((s) => s.edgeId === "alamein:ashburton-alamein");
+    expect(alameinBranch!.status).toBe("bus-replacement");
+    const belgraveCity = status.segments.find((s) => s.edgeId === "belgrave:richmond-east-richmond");
+    expect(belgraveCity!.status).toBe("bus-replacement");
+    // Beyond Box Hill on Belgrave line: unaffected
+    const beyond = status.segments.find((s) => s.edgeId === "belgrave:ringwood-heathmont");
+    expect(beyond!.status).toBe("running");
+  });
+});
+
 describe("status merge", () => {
   const ds = parsePage(FIXTURE, REF);
 

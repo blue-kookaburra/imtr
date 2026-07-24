@@ -59,7 +59,13 @@ export default function NetworkMap({ status, onSelect }: Props) {
     return m;
   }, [stations]);
 
-  const { t, setT, handlers, wasDrag } = usePanZoom({ x: 0, y: 0, k: 1 });
+  const { t, setT, zoomAt, handlers, wasDrag } = usePanZoom({ x: 0, y: 0, k: 1 });
+
+  function zoomButton(factor: number) {
+    const el = containerRef.current;
+    if (!el) return;
+    zoomAt(el.clientWidth / 2, el.clientHeight / 2, factor);
+  }
 
   // Fit the whole network to the container on first mount.
   const fitted = useRef(false);
@@ -247,6 +253,27 @@ export default function NetworkMap({ status, onSelect }: Props) {
           })}
         </g>
       </svg>
+
+      {/* Zoom controls */}
+      <div className="absolute bottom-16 right-3 flex flex-col overflow-hidden rounded-xl border border-hairline bg-elevated/90 backdrop-blur">
+        <button
+          type="button"
+          aria-label="Zoom in"
+          onClick={() => zoomButton(1.4)}
+          className="flex h-11 w-11 items-center justify-center text-xl font-bold text-ink-dim transition-colors duration-150 hover:text-ink cursor-pointer"
+        >
+          +
+        </button>
+        <div className="mx-2 h-px bg-hairline" aria-hidden />
+        <button
+          type="button"
+          aria-label="Zoom out"
+          onClick={() => zoomButton(1 / 1.4)}
+          className="flex h-11 w-11 items-center justify-center text-xl font-bold text-ink-dim transition-colors duration-150 hover:text-ink cursor-pointer"
+        >
+          −
+        </button>
+      </div>
     </div>
   );
 }

@@ -25,14 +25,14 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
           <button
             type="button"
             onClick={() => onChange(null)}
-            className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
+            className={`rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
               showingNow ? "bg-accent text-black" : "text-ink-dim"
             }`}
           >
             Now
           </button>
           <label
-            className={`relative rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
+            className={`relative rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
               showingNow ? "text-ink-dim" : "bg-accent text-black"
             }`}
           >

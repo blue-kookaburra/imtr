@@ -51,7 +51,10 @@ export function usePanZoom(initial: Transform, kMin = 0.15, kMax = 6) {
       } else if (pointers.current.size === 2 && pinchStart.current) {
         const [a, b] = [...pointers.current.values()];
         const dist = Math.hypot(a.x - b.x, a.y - b.y);
-        const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        // zoomAt expects container-relative coords (t.x/t.y translate the
+        // SVG group relative to the container's origin).
+        const rect = e.currentTarget.getBoundingClientRect();
+        const mid = { x: (a.x + b.x) / 2 - rect.x, y: (a.y + b.y) / 2 - rect.y };
         const factor = dist / pinchStart.current.dist;
         pinchStart.current.dist = dist;
         moved.current = true;
@@ -68,7 +71,8 @@ export function usePanZoom(initial: Transform, kMin = 0.15, kMax = 6) {
 
   const onWheel = useCallback(
     (e: React.WheelEvent) => {
-      zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+      const rect = e.currentTarget.getBoundingClientRect();
+      zoomAt(e.clientX - rect.x, e.clientY - rect.y, e.deltaY < 0 ? 1.15 : 1 / 1.15);
     },
     [zoomAt]
   );
