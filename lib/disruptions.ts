@@ -1,15 +1,10 @@
-import { unstable_cache } from "next/cache";
 import type { Disruption } from "./types";
-import { scrapeAll, SCRAPE_REVALIDATE_SECONDS } from "./scrape/fetch";
 import { fetchLiveDisruptions } from "./ptv";
+import snapshot from "@/data/disruptions.json";
 
-// Planned works scrape, cached for 2 days (per-page fetches are also cached
-// with the same revalidate window, so a cold cache miss stays cheap).
-const getPlannedWorks = unstable_cache(
-  async () => scrapeAll(new Date()),
-  ["planned-works"],
-  { revalidate: SCRAPE_REVALIDATE_SECONDS }
-);
+// Planned works come from data/disruptions.json, refreshed every 2 days by a
+// GitHub Actions cron running `npm run scrape` (the source site's bot
+// protection blocks serverless fetches, so scraping happens in CI with curl).
 
 export interface DisruptionData {
   disruptions: Disruption[];
@@ -19,7 +14,7 @@ export interface DisruptionData {
 }
 
 export async function getDisruptionData(): Promise<DisruptionData> {
-  const scraped = await getPlannedWorks();
+  const scraped = snapshot as { disruptions: Disruption[]; fetchedAt: string };
   const live = await fetchLiveDisruptions(); // [] when unconfigured/down
   const horizon = new Date(new Date(scraped.fetchedAt).getTime() + 28 * 24 * 3600 * 1000);
   return {

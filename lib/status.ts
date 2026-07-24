@@ -45,8 +45,12 @@ export function computeStatus(
   const lineWarnings = new Map<LineId, Set<string>>();
   for (const d of active) {
     for (const lineId of d.lineIds) {
-      if (d.parsed && d.fromStation && d.toStation) {
-        const edges = edgesBetween(lineId, d.fromStation, d.toStation);
+      // Outside timetabled hours "no trains" already tells the story;
+      // don't paint bus replacements over it at 4am.
+      if (!isServiceRunning(lineId, t)) continue;
+      const span = lineSpan(d, lineId);
+      if (span) {
+        const edges = edgesBetween(lineId, span.from, span.to);
         if (edges.length === 0) {
           // Section didn't map onto this line's stations: warn, don't guess.
           if (!lineWarnings.has(lineId)) lineWarnings.set(lineId, new Set());
@@ -58,8 +62,15 @@ export function computeStatus(
           s.status = "bus-replacement";
           s.disruptionIds.push(d.id);
         }
+      } else if (d.parsed && d.wholeLine) {
+        // Explicit whole-line replacement ("Buses replace trains.").
+        for (const e of lineEdges(lineId)) {
+          const s = segmentMap.get(e.id)!;
+          s.status = "bus-replacement";
+          s.disruptionIds.push(d.id);
+        }
       } else {
-        // No station section parsed: warn on the whole line, never a
+        // Couldn't parse a section: warn on the whole line, never a
         // possibly-wrong blackout.
         if (!lineWarnings.has(lineId)) lineWarnings.set(lineId, new Set());
         lineWarnings.get(lineId)!.add(d.id);
@@ -82,18 +93,31 @@ export function computeStatus(
   };
 }
 
+// The affected section of a disruption on one line: min..max of the
+// mentioned stations that exist on that line (needs at least 2 to span).
+function lineSpan(d: Disruption, lineId: LineId): { from: string; to: string } | null {
+  if (!d.parsed) return null;
+  const mentioned = d.stations ?? (d.fromStation && d.toStation ? [d.fromStation, d.toStation] : []);
+  const line = LINE_DEFS.find((l) => l.id === lineId);
+  if (!line) return null;
+  const idxs = mentioned
+    .map((s) => line.stations.indexOf(s))
+    .filter((i) => i !== -1)
+    .sort((a, b) => a - b);
+  if (idxs.length < 2) return null;
+  return { from: line.stations[idxs[0]], to: line.stations[idxs[idxs.length - 1]] };
+}
+
 // Is a station inside the affected section of a disruption on a given line?
 function stationInSection(stationId: string, d: Disruption, lineId: LineId): boolean {
-  if (d.wholeLine) return true;
-  if (!d.fromStation || !d.toStation) return true;
-  const line = LINE_DEFS.find((l) => l.id === lineId);
-  if (!line) return false;
+  if (d.wholeLine || !d.parsed) return true;
+  const span = lineSpan(d, lineId);
+  if (!span) return false;
+  const line = LINE_DEFS.find((l) => l.id === lineId)!;
   const i = line.stations.indexOf(stationId);
-  const ia = line.stations.indexOf(d.fromStation);
-  const ib = line.stations.indexOf(d.toStation);
-  if (i === -1 || ia === -1 || ib === -1) return false;
-  const [lo, hi] = ia < ib ? [ia, ib] : [ib, ia];
-  return i >= lo && i <= hi;
+  const lo = line.stations.indexOf(span.from);
+  const hi = line.stations.indexOf(span.to);
+  return i !== -1 && i >= lo && i <= hi;
 }
 
 function minutesToLabel(min: number): string {

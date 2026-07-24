@@ -1,0 +1,169 @@
+{
+  "disruptions": [
+    {
+      "id": "d1opg230",
+      "lineIds": [
+        "belgrave",
+        "lilydale",
+        "alamein"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "box-hill",
+      "stations": [
+        "flinders-street",
+        "alamein",
+        "box-hill"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-19",
+      "endDate": "2026-07-22",
+      "startMin": 1080,
+      "rawText": "Buses replace evening trains between Parliament, Alamein and Box Hill.",
+      "source": "planned-works"
+    },
+    {
+      "id": "d1ack976",
+      "lineIds": [
+        "belgrave"
+      ],
+      "fromStation": "bayswater",
+      "toStation": "belgrave",
+      "stations": [
+        "bayswater",
+        "belgrave"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-27",
+      "endDate": "2026-08-03",
+      "rawText": "Buses replace trains from Bayswater to Belgrave.",
+      "source": "planned-works"
+    },
+    {
+      "id": "doqfjf7",
+      "lineIds": [
+        "hurstbridge"
+      ],
+      "fromStation": "heidelberg",
+      "toStation": "greensborough",
+      "stations": [
+        "heidelberg",
+        "greensborough"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-17",
+      "endDate": "2026-07-19",
+      "rawText": "Buses replace trains between Heidelberg to Greensborough.",
+      "source": "planned-works"
+    },
+    {
+      "id": "d1goo3hq",
+      "lineIds": [
+        "hurstbridge"
+      ],
+      "fromStation": "heidelberg",
+      "toStation": "hurstbridge",
+      "stations": [
+        "heidelberg",
+        "hurstbridge"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-27",
+      "endDate": "2026-07-29",
+      "rawText": "Buses replace trains between Heidelberg and Hurstbridge.",
+      "source": "planned-works"
+    },
+    {
+      "id": "d1ml4fgm",
+      "lineIds": [
+        "sandringham"
+      ],
+      "wholeLine": true,
+      "parsed": true,
+      "startDate": "2026-07-24",
+      "endDate": "2026-07-26",
+      "rawText": "Buses replace trains.",
+      "source": "planned-works"
+    },
+    {
+      "id": "d17m8vzb",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-13",
+      "endDate": "2026-07-16",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works"
+    },
+    {
+      "id": "dsg6oa6",
+      "lineIds": [
+        "werribee",
+        "williamstown"
+      ],
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
+      "stations": [
+        "north-melbourne",
+        "newport",
+        "williamstown"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-25",
+      "endDate": "2026-07-26",
+      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown",
+      "source": "planned-works"
+    },
+    {
+      "id": "dps3tc",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-28",
+      "endDate": "2026-07-28",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works"
+    },
+    {
+      "id": "d1uommjm",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-07-30",
+      "endDate": "2026-07-30",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works"
+    }
+  ],
+  "fetchedAt": "2026-07-24T23:31:40.762Z",
+  "pagesTried": 10,
+  "pagesOk": 10
+}

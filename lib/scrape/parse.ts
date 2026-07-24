@@ -96,15 +96,15 @@ function parseClock(s: string): number | null {
   return h * 60 + (m[2] ? parseInt(m[2], 10) : 0);
 }
 
-// Match line mentions like "Werribee Line", "Werribee and Williamstown line".
+// Match line mentions like "Werribee Line", "Belgrave, Lilydale and Alamein lines".
 function matchLines(text: string): LineId[] {
   const found: LineId[] = [];
   const lower = text.toLowerCase();
-  // Only look in the part of the row before the description keyword, so a
-  // sentence like "buses replace trains" naming stations doesn't match lines.
   for (const line of LINES) {
     const name = line.name.toLowerCase();
-    const re = new RegExp(`\\b${name}(\\s+(and|,)|\\s+lines?\\b)`, "i");
+    // Station and line names collide (e.g. "Werribee"), so require list or
+    // "line(s)" context around the name.
+    const re = new RegExp(`\\b${name}\\s*(,|\\band\\b|lines?\\b|passengers?\\b)`, "i");
     if (re.test(lower) || lower.includes(`${name} line`)) {
       found.push(line.id);
     }
@@ -112,28 +112,30 @@ function matchLines(text: string): LineId[] {
   return found;
 }
 
-// "between North Melbourne, Newport and Williamstown" / "from Newport to Werribee"
-function matchSection(text: string): { from: string; to: string } | null {
-  const patterns = [
-    /between\s+([A-Za-z' ]+?)\s+and\s+([A-Za-z' ]+?)(?:[.,]|$| stations| in )/i,
-    /between\s+([A-Za-z' ]+?),\s*(?:[A-Za-z' ]+,\s*)*[A-Za-z' ]+\s+and\s+([A-Za-z' ]+?)(?:[.,]|$)/i,
-    /from\s+([A-Za-z' ]+?)\s+to\s+([A-Za-z' ]+?)(?:[.,]|$| stations)/i,
-  ];
-  for (const re of patterns) {
-    const m = text.match(re);
-    if (!m) continue;
-    // The "between A, B and C" case: try first & last names in the list.
-    const listMatch = text.match(/between\s+([A-Za-z', ]+?)\s+and\s+([A-Za-z' ]+?)(?:[.,]|$| stations)/i);
-    let fromName = m[1];
-    const toName = m[2];
-    if (listMatch && listMatch[1].includes(",")) {
-      fromName = listMatch[1].split(",")[0];
-    }
-    const from = findStationId(fromName);
-    const to = findStationId(toName.trim());
-    if (from && to && from !== to) return { from, to };
-  }
-  return null;
+// City Loop stations aren't on line paths; treat them as the city end.
+const CITY_ALIASES: Record<string, string> = {
+  parliament: "flinders-street",
+  flagstaff: "flinders-street",
+  "melbourne central": "flinders-street",
+};
+
+function resolveStation(name: string): string | undefined {
+  const clean = name.trim().toLowerCase();
+  return findStationId(CITY_ALIASES[clean] ?? clean);
+}
+
+// "between North Melbourne, Newport and Williamstown" /
+// "from Newport to Werribee" / "between Parliament, Alamein and Box Hill".
+// Returns every station mentioned so multi-branch sections can be spanned
+// per line downstream.
+function matchStations(text: string): string[] | null {
+  const m = text.match(
+    /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,? (?:each|nightly|daily|after|until|while|due|stations)\b|$)/i
+  );
+  if (!m) return null;
+  const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
+  const ids = [...new Set(parts.map(resolveStation).filter((s): s is string => !!s))];
+  return ids.length >= 2 ? ids : null;
 }
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
@@ -144,6 +146,10 @@ function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
   if (after) startMin = parseClock(after[1]) ?? undefined;
   const until = lower.match(/(?:until|before|to)\s+(\d{1,2}(?:[.:]\d{2})?\s*(?:am|pm))/);
   if (until) endMin = parseClock(until[1]) ?? undefined;
+  // "Buses replace evening trains" with no explicit time: assume from ~6pm.
+  if (startMin === undefined && endMin === undefined && /evening trains/.test(lower)) {
+    startMin = 18 * 60;
+  }
   return { startMin, endMin };
 }
 
@@ -174,22 +180,27 @@ export function parsePage(pageHtml: string, refDate: Date): Disruption[] {
       const endDate = rangeM[2] ? parseDayMonth(rangeM[2], refDate) : startDate;
       if (!startDate || !endDate) continue;
 
-      const section = matchSection(row);
+      const stations = matchStations(row);
       const { startMin, endMin } = matchTimeWindow(row);
 
       // Description sentence for display: from the disruption keyword onward.
       const kwIndex = row.search(DISRUPTION_KEYWORDS);
       const rawText = row.slice(kwIndex).split(/(?<=\.)\s/)[0].trim();
 
+      // "Buses replace trains." with no section text = the whole line is
+      // replaced; that's a confident blackout, not a warning.
+      const wholeLineExplicit = !stations && !/\b(between|from)\b/i.test(rawText);
+
       const id = hashId(`${lineIds.join(",")}|${startDate}|${endDate}|${rawText}`);
       if (out.has(id)) continue;
       out.set(id, {
         id,
         lineIds,
-        fromStation: section?.from,
-        toStation: section?.to,
-        wholeLine: !section,
-        parsed: !!section,
+        fromStation: stations?.[0],
+        toStation: stations?.[stations.length - 1],
+        stations: stations ?? undefined,
+        wholeLine: !stations,
+        parsed: !!stations || wholeLineExplicit,
         startDate,
         endDate,
         startMin,

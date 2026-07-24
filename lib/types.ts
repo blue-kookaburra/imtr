@@ -61,6 +61,10 @@ export interface Disruption {
   // Station ids bounding the affected section. Empty + wholeLine=true when unparseable.
   fromStation?: string;
   toStation?: string;
+  // All station ids mentioned in the section text. Multi-branch disruptions
+  // ("between Parliament, Alamein and Box Hill") span min..max of the ones
+  // present on each affected line.
+  stations?: string[];
   wholeLine: boolean;
   parsed: boolean; // false => render as warning, never blackout
   // Inclusive date range, local Melbourne dates (YYYY-MM-DD).
