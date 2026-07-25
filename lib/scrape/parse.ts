@@ -239,7 +239,9 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
     toStation: stations?.[stations.length - 1],
     stations: stations ?? undefined,
     wholeLine: !stations,
-    parsed: !!stations || !/\b(between|from [A-Z])/i.test(a.ArticleTitle ?? ""),
+    // No section found: confident whole-line only when the title doesn't
+    // hint at a station section we failed to parse.
+    parsed: !!stations || !/between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`),
     rawText: summary,
     source: "planned-works" as const,
     url: articleUrl,

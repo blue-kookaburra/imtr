@@ -40,7 +40,7 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
             type="button"
             onClick={() => onChange(null)}
             className={`rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
-              showingNow ? "bg-accent text-black" : "text-ink-dim"
+              showingNow ? "bg-accent text-white" : "text-ink-dim"
             }`}
           >
             Now
@@ -49,7 +49,7 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
             type="button"
             onClick={openPicker}
             className={`relative rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
-              showingNow ? "text-ink-dim" : "bg-accent text-black"
+              showingNow ? "text-ink-dim" : "bg-accent text-white"
             }`}
           >
             Later

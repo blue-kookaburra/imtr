@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* OLED transit theme */
-  --bg: #07090d;
-  --bg-elevated: #0e1219;
-  --bg-sheet: #131926;
-  --ink: #eef2f7;
-  --ink-dim: #93a1b5;
-  --ink-faint: #4d5a6e;
-  --hairline: #1c2432;
-  --accent: #ffb531; /* PTV metro yellow — signage accent */
-  --ok: #22c55e;
-  --warn: #f59e0b;
-  --bad: #ef4444;
-  --blackout: #1a1d23;
+  /* Light paper theme, matching the official network map */
+  color-scheme: light;
+  --bg: #f3efe4;
+  --bg-elevated: #fbf9f3;
+  --bg-sheet: #ffffff;
+  --ink: #1f2430;
+  --ink-dim: #5b6472;
+  --ink-faint: #98a1ad;
+  --hairline: #ddd6c8;
+  --accent: #b45309; /* deep signal amber — readable on paper */
+  --ok: #15803d;
+  --warn: #b45309;
+  --bad: #dc2626;
+  --blackout: #31363e;
 }
 
 @theme inline {

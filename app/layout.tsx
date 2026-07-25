@@ -20,13 +20,13 @@ export const metadata: Metadata = {
   description:
     "Melbourne train disruptions without the confusion. See which lines are running right now, at any future time, or by station calendar.",
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, title: "Is My Train Running?", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "Is My Train Running?", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#07090d",
+  themeColor: "#fbf9f3",
 };
 
 export default function RootLayout({

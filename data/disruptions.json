@@ -68,7 +68,7 @@
         "pakenham"
       ],
       "wholeLine": true,
-      "parsed": false,
+      "parsed": true,
       "rawText": "Service changes from Saturday night 25 July to last service Sunday 26 July 2026",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/gippsland-line-service-changes-from-saturday-night-25-july-to-last-service-sunday-26-july-2026",
@@ -225,7 +225,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-07-25T10:53:15.954Z",
+  "fetchedAt": "2026-07-25T11:06:24.834Z",
   "pagesTried": 10,
   "pagesOk": 10
 }

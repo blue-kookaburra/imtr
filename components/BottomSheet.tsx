@@ -14,7 +14,7 @@ export default function BottomSheet({ open, onClose, children }: Props) {
         type="button"
         aria-label="Close details"
         onClick={onClose}
-        className="fixed inset-0 z-40 cursor-default bg-black/50"
+        className="fixed inset-0 z-40 cursor-default bg-black/30"
       />
       <div
         role="dialog"

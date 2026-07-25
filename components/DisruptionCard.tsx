@@ -32,31 +32,38 @@ function minLabel(min: number): string {
 export default function DisruptionCard({ d }: { d: Disruption }) {
   const hasTs = !!(d.startTs || d.endTs);
   const hasWindow = d.startMin !== undefined || d.endMin !== undefined;
+  // When the official text already spells out the times ("from 9.30pm
+  // Saturday…"), it is the authoritative human wording — don't show our raw
+  // feed timestamps next to it (they include padding buffers and read as a
+  // contradiction).
+  const textHasTimes = /\d\s*(?:[:.]\d{2})?\s*(?:am|pm)/i.test(d.rawText);
   return (
     <div className="mt-3 rounded-lg border border-hairline bg-bg p-3.5">
-      <p className="tabular text-sm font-bold text-accent">
-        {hasTs ? (
-          <>
-            {d.startTs && tsLabel(d.startTs)}
-            {d.endTs && <> → {tsLabel(d.endTs)}</>}
-          </>
-        ) : (
-          <>
-            {dayLabel(d.startDate)}
-            {d.endDate !== d.startDate && <> – {dayLabel(d.endDate)}</>}
-            {hasWindow && (
-              <>
-                {" · "}
-                {d.startMin !== undefined && `from ${minLabel(d.startMin)}`}
-                {d.startMin !== undefined && d.endMin !== undefined && " "}
-                {d.endMin !== undefined && `until ${minLabel(d.endMin)}`}
-              </>
-            )}
-          </>
-        )}
-      </p>
-      <p className="mt-1.5 text-sm leading-snug">{d.rawText}</p>
-      {!hasTs && !hasWindow && (
+      {!textHasTimes && (
+        <p className="tabular text-sm font-bold text-accent">
+          {hasTs ? (
+            <>
+              {d.startTs && tsLabel(d.startTs)}
+              {d.endTs && <> → {tsLabel(d.endTs)}</>}
+            </>
+          ) : (
+            <>
+              {dayLabel(d.startDate)}
+              {d.endDate !== d.startDate && <> – {dayLabel(d.endDate)}</>}
+              {hasWindow && (
+                <>
+                  {" · "}
+                  {d.startMin !== undefined && `from ${minLabel(d.startMin)}`}
+                  {d.startMin !== undefined && d.endMin !== undefined && " "}
+                  {d.endMin !== undefined && `until ${minLabel(d.endMin)}`}
+                </>
+              )}
+            </>
+          )}
+        </p>
+      )}
+      <p className={`${textHasTimes ? "" : "mt-1.5 "}text-sm leading-snug font-medium`}>{d.rawText}</p>
+      {!hasTs && !hasWindow && !textHasTimes && (
         <p className="mt-1.5 text-xs leading-snug text-ink-dim">
           Start and end times within these days aren&apos;t published here — trains may still run
           part of the day.
