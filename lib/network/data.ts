@@ -197,14 +197,14 @@ export const ARMS: [string, string, string[]][] = [
   ],
 ];
 
-// Official PTV group colours.
-const GREEN = "#028430"; // cross-city (Werribee / Williamstown / Frankston)
-const YELLOW = "#FFB531"; // northern (Sunbury / Craigieburn / Upfield)
-const CYAN = "#279FD5"; // Caulfield group (Pakenham / Cranbourne)
-const RED = "#BE1014"; // Clifton Hill group (Mernda / Hurstbridge)
-const NAVY = "#152C6B"; // Burnley group
-const PINK = "#F178AF"; // Sandringham
-const GREY = "#77828C"; // Stony Point shuttle
+// Official line-group colours from the 2026 network map.
+const PINK = "#F581B6"; // Werribee / Williamstown / Sandringham
+const CYAN = "#00A2E2"; // Sunbury / Cranbourne / Pakenham (Metro Tunnel)
+const YELLOW = "#F6BE00"; // Craigieburn / Upfield
+const RED = "#CC132E"; // Mernda / Hurstbridge
+const NAVY = "#004B99"; // Lilydale / Belgrave / Alamein / Glen Waverley
+const GREEN = "#00953C"; // Frankston
+const LGREEN = "#4CB05C"; // Stony Point
 
 // Metro Tunnel core shared by Sunbury / Pakenham / Cranbourne through-running.
 const TUNNEL = ["footscray", "arden", "parkville", "state-library", "town-hall", "anzac", "caulfield"];
@@ -213,7 +213,7 @@ export const LINES: LineDef[] = [
   {
     id: "werribee",
     name: "Werribee",
-    color: GREEN,
+    color: PINK,
     stations: [
       "flinders-street", "southern-cross", "north-melbourne", "south-kensington",
       "footscray", "seddon", "yarraville", "spotswood", "newport",
@@ -224,7 +224,7 @@ export const LINES: LineDef[] = [
   {
     id: "williamstown",
     name: "Williamstown",
-    color: GREEN,
+    color: PINK,
     stations: [
       "flinders-street", "southern-cross", "north-melbourne", "south-kensington",
       "footscray", "seddon", "yarraville", "spotswood", "newport",
@@ -234,7 +234,7 @@ export const LINES: LineDef[] = [
   {
     id: "sunbury",
     name: "Sunbury",
-    color: YELLOW,
+    color: CYAN,
     stations: [
       ...TUNNEL.slice().reverse().slice(0, 6), // caulfield..arden (city end shown via tunnel)
       "footscray", "middle-footscray", "west-footscray", "tottenham",
@@ -383,7 +383,7 @@ export const LINES: LineDef[] = [
   {
     id: "stony-point",
     name: "Stony Point",
-    color: GREY,
+    color: LGREEN,
     stations: [
       "frankston", "leawarra", "baxter", "somerville", "tyabb", "hastings",
       "bittern", "morradoo", "crib-point", "stony-point",

@@ -1,22 +1,26 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { EDGES, LINE_BY_ID, LINE_DEFS, stationList } from "@/lib/network/build";
-import { ANCHORS, CITY_LOOP } from "@/lib/network/data";
+import { EDGES, STATIONS } from "@/lib/network/build";
 import type { Edge, SegmentStatus, StatusResponse } from "@/lib/types";
 import { usePanZoom } from "./usePanZoom";
+import mapData from "@/data/map-stations.json";
 
-const S = 44; // schematic unit -> px
+// Base layer: high-res raster of the official Victorian train network map.
+// Status overlay: SVG strokes drawn between extracted station coordinates.
 
-// Stations whose label sits left of the dot to avoid city-core collisions.
-const LABEL_LEFT = new Set(["melbourne-central", "anzac", "southern-cross", "flagstaff", "arden"]);
+const MAP_W = mapData.width as number;
+const MAP_H = mapData.height as number;
+const COORDS = mapData.stations as unknown as Record<string, [number, number]>;
+// Per-edge overlay geometry routed along the map's drawn line artwork.
+const EDGE_PATHS = mapData.edges as unknown as Record<string, [number, number][]>;
 
-// Light "paper" canvas colours, matching the official map's look.
-const INK = "#1f2430";
-const INK_MINOR = "#5b6472";
-const HALO = "#f3efe4";
-const DOT_STROKE = "#2b2f38";
-const PAPER_GREY = "#d8d2c2"; // no-service / loop ring
+function pathD(pts: [number, number][]): string {
+  return pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
+}
+
+const WASH = "#eef0f3"; // matches the map's metro-zone background
+const NO_SERVICE = "#b7bcc4";
 const BLACKOUT = "#31363e";
 
 export interface Selection {
@@ -30,123 +34,40 @@ interface Props {
   onSelect: (sel: Selection | null) => void;
 }
 
-function px(v: number) {
-  return v * S;
-}
-
-// Parallel lines sharing a station pair are offset perpendicular to the edge.
-function edgeOffsets(): Map<string, number> {
-  const groups = new Map<string, Edge[]>();
-  for (const e of EDGES) {
-    const key = [e.from, e.to].sort().join("|");
-    const g = groups.get(key) ?? [];
-    g.push(e);
-    groups.set(key, g);
-  }
-  const offsets = new Map<string, number>();
-  for (const g of groups.values()) {
-    g.forEach((e, i) => offsets.set(e.id, (i - (g.length - 1) / 2) * 4.5));
-  }
-  return offsets;
-}
-
 export default function NetworkMap({ status, onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const stations = useMemo(() => stationList(), []);
-  const offsets = useMemo(() => edgeOffsets(), []);
   const statusByEdge = useMemo(() => {
     const m = new Map<string, SegmentStatus>();
     for (const s of status?.segments ?? []) m.set(s.edgeId, s);
     return m;
   }, [status]);
-  const warnedLines = useMemo(
-    () => new Set(status?.lineWarnings.map((w) => w.lineId) ?? []),
-    [status]
-  );
 
-  const stationXY = useMemo(() => {
-    const m = new Map<string, { x: number; y: number }>();
-    for (const s of stations) m.set(s.id, { x: px(s.x), y: px(s.y) });
-    return m;
-  }, [stations]);
+  const { t, setT, zoomAt, handlers, wasDrag } = usePanZoom({ x: 0, y: 0, k: 0.2 }, 0.05, 2.5);
 
-  const { t, setT, zoomAt, handlers, wasDrag } = usePanZoom({ x: 0, y: 0, k: 1 });
-
-  function zoomButton(factor: number) {
-    const el = containerRef.current;
-    if (!el) return;
-    zoomAt(el.clientWidth / 2, el.clientHeight / 2, factor);
-  }
-
-  // Fit the whole network to the container on first mount.
+  // Fit the metro area (bbox of known stations) on first mount.
   const fitted = useRef(false);
   useLayoutEffect(() => {
     if (fitted.current || !containerRef.current) return;
     fitted.current = true;
     const { clientWidth: w, clientHeight: h } = containerRef.current;
-    const xs = [...stationXY.values()].map((p) => p.x);
-    const ys = [...stationXY.values()].map((p) => p.y);
-    const pad = 60;
+    const xs = Object.values(COORDS).map((p) => p[0]);
+    const ys = Object.values(COORDS).map((p) => p[1]);
+    const pad = 90;
     const minX = Math.min(...xs) - pad;
     const maxX = Math.max(...xs) + pad;
     const minY = Math.min(...ys) - pad;
     const maxY = Math.max(...ys) + pad;
-    const k = Math.min(w / (maxX - minX), h / (maxY - minY));
-    // Transform applies translate(x,y) scale(k) to schematic coords.
-    setT({
-      k,
-      x: (w - (minX + maxX) * k) / 2,
-      y: (h - (minY + maxY) * k) / 2,
-    });
-  }, [stationXY, setT]);
+    // Fit the metro bbox, then lean in toward the city core — full-poster
+    // fit is unreadably small on a phone; the rest is a pan away.
+    const k = Math.min(w / (maxX - minX), h / (maxY - minY)) * 1.7;
+    const loop = COORDS["flinders-street"];
+    setT({ k, x: w / 2 - loop[0] * k, y: h / 2 - loop[1] * k });
+  }, [setT]);
 
-  // Zoom tiers: overview shows termini labels + major dots only; mid shows
-  // all dots + major labels; close shows everything.
-  const showAllDots = t.k > 0.45;
-  const showMajorLabels = t.k > 0.45;
-  const showMinorLabels = t.k > 0.9;
-  // Counter-scale factor: keeps strokes/labels near screen size while zooming
-  // (sqrt so zooming in still grows things somewhat).
-  const z = 1 / Math.sqrt(t.k);
-
-  const termini = useMemo(() => new Set(LINE_DEFS.map((l) => l.stations[l.stations.length - 1])), []);
-
-  // Loop-only stations (Flagstaff etc.) aren't on any line path, so their
-  // coords come straight from the anchor table.
-  const loopPath = useMemo(() => {
-    const pts = CITY_LOOP.map((id) => ({ x: px(ANCHORS[id][0]), y: px(ANCHORS[id][1]) }));
-    // Extra corner closes the box on the Parliament->Flinders St side.
-    const corner = { x: px(1.2), y: px(0.6) };
-    return (
-      pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") +
-      ` L${corner.x},${corner.y} Z`
-    );
-  }, []);
-
-  const loopOnlyStations = useMemo(
-    () =>
-      CITY_LOOP.filter((id) => !stationXY.has(id)).map((id) => ({
-        id,
-        name: id
-          .split("-")
-          .map((w) => w[0].toUpperCase() + w.slice(1))
-          .join(" "),
-        x: px(ANCHORS[id][0]),
-        y: px(ANCHORS[id][1]),
-      })),
-    [stationXY]
-  );
-
-  function segLine(e: Edge) {
-    const a = stationXY.get(e.from)!;
-    const b = stationXY.get(e.to)!;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const off = offsets.get(e.id) ?? 0;
-    const ox = (-dy / len) * off;
-    const oy = (dx / len) * off;
-    return { x1: a.x + ox, y1: a.y + oy, x2: b.x + ox, y2: b.y + oy };
+  function zoomButton(factor: number) {
+    const el = containerRef.current;
+    if (!el) return;
+    zoomAt(el.clientWidth / 2, el.clientHeight / 2, factor);
   }
 
   function handleEdgeClick(e: Edge) {
@@ -155,124 +76,97 @@ export default function NetworkMap({ status, onSelect }: Props) {
     onSelect(st ? { kind: "edge", edge: e, status: st } : null);
   }
 
+  // Only disrupted edges get overlay art; hit areas exist for every edge.
+  const disrupted = useMemo(
+    () =>
+      EDGES.filter((e) => {
+        const st = statusByEdge.get(e.id)?.status;
+        return st === "bus-replacement" || st === "no-service";
+      }),
+    [statusByEdge]
+  );
+
   return (
     <div
       ref={containerRef}
-      className="map-canvas relative h-full w-full touch-none overflow-hidden"
+      className="relative h-full w-full touch-none overflow-hidden bg-white"
       {...handlers}
     >
-      <svg className="h-full w-full" role="img" aria-label="Melbourne train network status map">
-        <g transform={`translate(${t.x},${t.y}) scale(${t.k})`}>
-          {/* City Loop ring */}
-          <path d={loopPath} fill="none" stroke={PAPER_GREY} strokeWidth={9 * z} strokeLinejoin="round" />
-
-          {/* Edges: ghost base + status strokes */}
-          {EDGES.map((e) => {
-            const l = segLine(e);
-            const line = LINE_BY_ID.get(e.lineId)!;
-            const st = statusByEdge.get(e.id)?.status ?? "running";
-            const warned = warnedLines.has(e.lineId);
+      <div
+        style={{
+          transform: `translate(${t.x}px, ${t.y}px) scale(${t.k})`,
+          transformOrigin: "0 0",
+          width: MAP_W,
+          height: MAP_H,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/network-map.png"
+          alt="Victorian train network map"
+          width={MAP_W}
+          height={MAP_H}
+          draggable={false}
+          className="pointer-events-none select-none"
+        />
+        <svg
+          className="absolute left-0 top-0"
+          width={MAP_W}
+          height={MAP_H}
+          viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+          aria-hidden
+        >
+          {disrupted.map((e) => {
+            const pts = EDGE_PATHS[e.id];
+            if (!pts) return null;
+            const d = pathD(pts);
+            const st = statusByEdge.get(e.id)!.status;
             return (
-              <g key={e.id}>
-                {/* ghost base — the network is always faintly visible */}
-                <line {...l} stroke={line.color} strokeWidth={4 * z} opacity={0.25} strokeLinecap="round" />
-                {st === "running" && (
-                  <line
-                    {...l}
-                    stroke={line.color}
-                    strokeWidth={4 * z}
-                    strokeLinecap="round"
-                    opacity={warned ? 0.55 : 1}
-                  />
+              <g key={e.id} fill="none">
+                {/* wash hides the printed line colour */}
+                <path d={d} stroke={WASH} strokeWidth={13} strokeLinecap="round" strokeLinejoin="round" opacity={0.92} />
+                {st === "no-service" && (
+                  <path d={d} stroke={NO_SERVICE} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
                 )}
                 {st === "bus-replacement" && (
                   <>
-                    <line {...l} stroke={BLACKOUT} strokeWidth={5 * z} strokeLinecap="round" />
-                    <line
-                      {...l}
+                    <path d={d} stroke={BLACKOUT} strokeWidth={8} strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d={d}
                       className="seg-out"
                       stroke="var(--bad)"
-                      strokeWidth={2.5 * z}
-                      strokeDasharray={`${7 * z} ${7 * z}`}
+                      strokeWidth={4}
+                      strokeDasharray="12 12"
                       strokeLinecap="round"
+                      strokeLinejoin="round"
                     />
                   </>
                 )}
-                {st === "no-service" && (
-                  <line {...l} stroke={PAPER_GREY} strokeWidth={4 * z} strokeLinecap="round" />
-                )}
-                {/* fat invisible hit area */}
-                <line
-                  {...l}
-                  stroke="transparent"
-                  strokeWidth={16 * z}
-                  strokeLinecap="round"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => handleEdgeClick(e)}
-                />
               </g>
             );
           })}
-
-          {/* City Loop-only stations */}
-          {loopOnlyStations.map((s) => (
-            <g key={s.id}>
-              <circle cx={s.x} cy={s.y} r={4 * z} fill="#fff" stroke={DOT_STROKE} strokeWidth={1.8 * z} />
-              {showMajorLabels && (
-                <text
-                  x={s.x + (LABEL_LEFT.has(s.id) ? -8 : 8) * z}
-                  y={s.y - 6 * z}
-                  textAnchor={LABEL_LEFT.has(s.id) ? "end" : "start"}
-                  fontSize={10 * z}
-                  fontWeight={700}
-                  fill={INK}
-                  style={{ paintOrder: "stroke", stroke: HALO, strokeWidth: 3 * z }}
-                >
-                  {s.name}
-                </text>
-              )}
-            </g>
-          ))}
-
-          {/* Stations */}
-          {stations.map((s) => {
-            const p = stationXY.get(s.id)!;
-            const isTerminus = termini.has(s.id);
-            const major = s.interchange || isTerminus;
-            if (!major && !showAllDots) return null;
-            const labelled =
-              (isTerminus) || (s.interchange && showMajorLabels) || showMinorLabels;
+          {/* hit areas over every edge */}
+          {EDGES.map((e) => {
+            const pts = EDGE_PATHS[e.id];
+            if (!pts) return null;
             return (
-              <g key={s.id}>
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={(major ? 4.5 : 2.6) * z}
-                  fill="#fff"
-                  stroke={DOT_STROKE}
-                  strokeWidth={(major ? 2 : 1.3) * z}
-                />
-                {labelled && (
-                  <text
-                    x={p.x + (p.x > 400 || LABEL_LEFT.has(s.id) ? -8 : 8) * z}
-                    y={p.y - 6 * z}
-                    textAnchor={p.x > 400 || LABEL_LEFT.has(s.id) ? "end" : "start"}
-                    fontSize={(major ? 11 : 9) * z}
-                    fontWeight={major ? 700 : 400}
-                    fill={major ? INK : INK_MINOR}
-                    style={{ paintOrder: "stroke", stroke: HALO, strokeWidth: 3 * z }}
-                  >
-                    {s.name}
-                  </text>
-                )}
-              </g>
+              <path
+                key={e.id}
+                d={pathD(pts)}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={30}
+                strokeLinecap="round"
+                style={{ cursor: "pointer", pointerEvents: "stroke" }}
+                onClick={() => handleEdgeClick(e)}
+              />
             );
           })}
-        </g>
-      </svg>
+        </svg>
+      </div>
 
       {/* Zoom controls */}
-      <div className="absolute bottom-16 right-3 flex flex-col overflow-hidden rounded-xl border border-hairline bg-elevated/90 backdrop-blur">
+      <div className="absolute bottom-16 right-3 flex flex-col overflow-hidden rounded-xl border border-hairline bg-elevated/95 backdrop-blur">
         <button
           type="button"
           aria-label="Zoom in"
@@ -294,3 +188,6 @@ export default function NetworkMap({ status, onSelect }: Props) {
     </div>
   );
 }
+
+// Referenced by MapScreen for sheet display names.
+export { STATIONS };
