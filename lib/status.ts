@@ -9,7 +9,13 @@ import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/b
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
 
 // Does this disruption apply at the given Melbourne-local moment?
-function disruptionActiveAt(d: Disruption, t: MelTime): boolean {
+function disruptionActiveAt(d: Disruption, t: MelTime, at: Date): boolean {
+  // Exact timestamp bounds (PTV API) beat date-range + daily window.
+  if (d.startTs || d.endTs) {
+    if (d.startTs && at < new Date(d.startTs)) return false;
+    if (d.endTs && at > new Date(d.endTs)) return false;
+    return true;
+  }
   if (t.dateStr < d.startDate || t.dateStr > d.endDate) return false;
   if (d.startMin !== undefined && t.minutes < d.startMin) return false;
   if (d.endMin !== undefined && t.minutes > d.endMin) return false;
@@ -25,7 +31,7 @@ export function computeStatus(
   dataUpdatedAt: string
 ): StatusResponse {
   const t = toMelTime(at);
-  const active = disruptions.filter((d) => disruptionActiveAt(d, t));
+  const active = disruptions.filter((d) => disruptionActiveAt(d, t, at));
 
   const segmentMap = new Map<string, SegmentStatus>();
   for (const e of EDGES) {

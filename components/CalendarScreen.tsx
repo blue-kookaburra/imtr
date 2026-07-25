@@ -7,6 +7,7 @@ import type { CalendarResponse, DayStatus } from "@/lib/types";
 import { STATIONS } from "@/lib/network/build";
 import StationSearch from "./StationSearch";
 import BottomSheet from "./BottomSheet";
+import DisruptionCard from "./DisruptionCard";
 
 const DAY_CLS: Record<DayStatus["status"], string> = {
   normal: "bg-ok/15 text-ok",
@@ -218,16 +219,10 @@ export default function CalendarScreen() {
             )}
             {(selDay.status === "partial" || selDay.status === "disrupted") && (
               <>
-                {selDay.summary &&
-                  !(data?.disruptions ?? []).some(
-                    (d) => selDay.disruptionIds.includes(d.id) && d.rawText === selDay.summary
-                  ) && <p className="mt-3 text-sm leading-snug">{selDay.summary}</p>}
                 {(data?.disruptions ?? [])
                   .filter((d) => selDay.disruptionIds.includes(d.id))
                   .map((d) => (
-                    <div key={d.id} className="mt-3 rounded-lg border border-hairline bg-bg p-3">
-                      <p className="text-sm leading-snug">{d.rawText}</p>
-                    </div>
+                    <DisruptionCard key={d.id} d={d} />
                   ))}
                 <Link
                   href={`/?at=${selDay.date}T12:00`}

@@ -163,7 +163,8 @@ const DISRUPTION_KEYWORDS =
   /buses replace|bus replacement|no trains|trains (?:do )?not run|closed|coaches replace|service(?:s)? (?:will )?not run/i;
 
 // Parse one page's tables into disruptions. refDate anchors year inference.
-export function parsePage(pageHtml: string, refDate: Date): Disruption[] {
+// pageUrl becomes each disruption's official-details link.
+export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Disruption[] {
   const out = new Map<string, Disruption>();
   for (const table of extractTableHtml(pageHtml)) {
     for (const row of tableRows(table)) {
@@ -207,6 +208,7 @@ export function parsePage(pageHtml: string, refDate: Date): Disruption[] {
         endMin,
         rawText,
         source: "planned-works",
+        url: pageUrl,
       });
     }
   }

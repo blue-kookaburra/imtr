@@ -20,7 +20,8 @@
       "endDate": "2026-07-22",
       "startMin": 1080,
       "rawText": "Buses replace evening trains between Parliament, Alamein and Box Hill.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
       "id": "d1ack976",
@@ -38,7 +39,8 @@
       "startDate": "2026-07-27",
       "endDate": "2026-08-03",
       "rawText": "Buses replace trains from Bayswater to Belgrave.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
       "id": "doqfjf7",
@@ -56,7 +58,8 @@
       "startDate": "2026-07-17",
       "endDate": "2026-07-19",
       "rawText": "Buses replace trains between Heidelberg to Greensborough.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
     },
     {
       "id": "d1goo3hq",
@@ -74,7 +77,8 @@
       "startDate": "2026-07-27",
       "endDate": "2026-07-29",
       "rawText": "Buses replace trains between Heidelberg and Hurstbridge.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
     },
     {
       "id": "d1ml4fgm",
@@ -86,7 +90,8 @@
       "startDate": "2026-07-24",
       "endDate": "2026-07-26",
       "rawText": "Buses replace trains.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/sandringham-line-disruptions"
     },
     {
       "id": "d17m8vzb",
@@ -104,7 +109,8 @@
       "startDate": "2026-07-13",
       "endDate": "2026-07-16",
       "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
       "id": "dsg6oa6",
@@ -124,7 +130,8 @@
       "startDate": "2026-07-25",
       "endDate": "2026-07-26",
       "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
       "id": "dps3tc",
@@ -142,7 +149,8 @@
       "startDate": "2026-07-28",
       "endDate": "2026-07-28",
       "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
       "id": "d1uommjm",
@@ -160,10 +168,11 @@
       "startDate": "2026-07-30",
       "endDate": "2026-07-30",
       "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works"
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-07-24T23:31:40.762Z",
+  "fetchedAt": "2026-07-25T10:19:46.779Z",
   "pagesTried": 10,
   "pagesOk": 10
 }

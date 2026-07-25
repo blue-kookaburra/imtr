@@ -8,6 +8,17 @@ import { usePanZoom } from "./usePanZoom";
 
 const S = 44; // schematic unit -> px
 
+// Stations whose label sits left of the dot to avoid city-core collisions.
+const LABEL_LEFT = new Set(["melbourne-central", "anzac", "southern-cross", "flagstaff", "arden"]);
+
+// Light "paper" canvas colours, matching the official map's look.
+const INK = "#1f2430";
+const INK_MINOR = "#5b6472";
+const HALO = "#f3efe4";
+const DOT_STROKE = "#2b2f38";
+const PAPER_GREY = "#d8d2c2"; // no-service / loop ring
+const BLACKOUT = "#31363e";
+
 export interface Selection {
   kind: "edge";
   edge: Edge;
@@ -104,7 +115,12 @@ export default function NetworkMap({ status, onSelect }: Props) {
   // coords come straight from the anchor table.
   const loopPath = useMemo(() => {
     const pts = CITY_LOOP.map((id) => ({ x: px(ANCHORS[id][0]), y: px(ANCHORS[id][1]) }));
-    return pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") + " Z";
+    // Extra corner closes the box on the Parliament->Flinders St side.
+    const corner = { x: px(1.2), y: px(0.6) };
+    return (
+      pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") +
+      ` L${corner.x},${corner.y} Z`
+    );
   }, []);
 
   const loopOnlyStations = useMemo(
@@ -142,13 +158,13 @@ export default function NetworkMap({ status, onSelect }: Props) {
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full touch-none overflow-hidden board-glow"
+      className="map-canvas relative h-full w-full touch-none overflow-hidden"
       {...handlers}
     >
       <svg className="h-full w-full" role="img" aria-label="Melbourne train network status map">
         <g transform={`translate(${t.x},${t.y}) scale(${t.k})`}>
           {/* City Loop ring */}
-          <path d={loopPath} fill="none" stroke="var(--hairline)" strokeWidth={10 * z} strokeLinejoin="round" />
+          <path d={loopPath} fill="none" stroke={PAPER_GREY} strokeWidth={9 * z} strokeLinejoin="round" />
 
           {/* Edges: ghost base + status strokes */}
           {EDGES.map((e) => {
@@ -159,7 +175,7 @@ export default function NetworkMap({ status, onSelect }: Props) {
             return (
               <g key={e.id}>
                 {/* ghost base — the network is always faintly visible */}
-                <line {...l} stroke={line.color} strokeWidth={4 * z} opacity={0.16} strokeLinecap="round" />
+                <line {...l} stroke={line.color} strokeWidth={4 * z} opacity={0.25} strokeLinecap="round" />
                 {st === "running" && (
                   <line
                     {...l}
@@ -171,7 +187,7 @@ export default function NetworkMap({ status, onSelect }: Props) {
                 )}
                 {st === "bus-replacement" && (
                   <>
-                    <line {...l} stroke="var(--blackout)" strokeWidth={5 * z} strokeLinecap="round" />
+                    <line {...l} stroke={BLACKOUT} strokeWidth={5 * z} strokeLinecap="round" />
                     <line
                       {...l}
                       className="seg-out"
@@ -183,7 +199,7 @@ export default function NetworkMap({ status, onSelect }: Props) {
                   </>
                 )}
                 {st === "no-service" && (
-                  <line {...l} stroke="var(--blackout)" strokeWidth={4 * z} strokeLinecap="round" opacity={0.9} />
+                  <line {...l} stroke={PAPER_GREY} strokeWidth={4 * z} strokeLinecap="round" />
                 )}
                 {/* fat invisible hit area */}
                 <line
@@ -201,15 +217,16 @@ export default function NetworkMap({ status, onSelect }: Props) {
           {/* City Loop-only stations */}
           {loopOnlyStations.map((s) => (
             <g key={s.id}>
-              <circle cx={s.x} cy={s.y} r={4 * z} fill="var(--bg)" stroke="var(--ink)" strokeWidth={1.8 * z} />
+              <circle cx={s.x} cy={s.y} r={4 * z} fill="#fff" stroke={DOT_STROKE} strokeWidth={1.8 * z} />
               {showMajorLabels && (
                 <text
-                  x={s.x + 8 * z}
+                  x={s.x + (LABEL_LEFT.has(s.id) ? -8 : 8) * z}
                   y={s.y - 6 * z}
+                  textAnchor={LABEL_LEFT.has(s.id) ? "end" : "start"}
                   fontSize={10 * z}
                   fontWeight={700}
-                  fill="var(--ink)"
-                  style={{ paintOrder: "stroke", stroke: "var(--bg)", strokeWidth: 3 * z }}
+                  fill={INK}
+                  style={{ paintOrder: "stroke", stroke: HALO, strokeWidth: 3 * z }}
                 >
                   {s.name}
                 </text>
@@ -231,19 +248,19 @@ export default function NetworkMap({ status, onSelect }: Props) {
                   cx={p.x}
                   cy={p.y}
                   r={(major ? 4.5 : 2.6) * z}
-                  fill="var(--bg)"
-                  stroke="var(--ink)"
+                  fill="#fff"
+                  stroke={DOT_STROKE}
                   strokeWidth={(major ? 2 : 1.3) * z}
                 />
                 {labelled && (
                   <text
-                    x={p.x + (p.x > 400 ? -8 : 8) * z}
+                    x={p.x + (p.x > 400 || LABEL_LEFT.has(s.id) ? -8 : 8) * z}
                     y={p.y - 6 * z}
-                    textAnchor={p.x > 400 ? "end" : "start"}
+                    textAnchor={p.x > 400 || LABEL_LEFT.has(s.id) ? "end" : "start"}
                     fontSize={(major ? 11 : 9) * z}
                     fontWeight={major ? 700 : 400}
-                    fill={major ? "var(--ink)" : "var(--ink-dim)"}
-                    style={{ paintOrder: "stroke", stroke: "var(--bg)", strokeWidth: 3 * z }}
+                    fill={major ? INK : INK_MINOR}
+                    style={{ paintOrder: "stroke", stroke: HALO, strokeWidth: 3 * z }}
                   >
                     {s.name}
                   </text>

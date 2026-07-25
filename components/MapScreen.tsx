@@ -7,6 +7,7 @@ import { LINE_BY_ID, STATIONS } from "@/lib/network/build";
 import NetworkMap, { type Selection } from "./NetworkMap";
 import TimeBar from "./TimeBar";
 import BottomSheet from "./BottomSheet";
+import DisruptionCard from "./DisruptionCard";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   running: { label: "Running", cls: "text-ok" },
@@ -54,7 +55,9 @@ export default function MapScreen() {
 
         {!status && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="tabular animate-pulse text-sm text-ink-dim">Loading network…</p>
+            <p className="tabular animate-pulse rounded-full bg-elevated/90 px-4 py-2 text-sm text-ink-dim">
+              Loading network…
+            </p>
           </div>
         )}
         {error && (
@@ -114,23 +117,7 @@ export default function MapScreen() {
               {STATUS_LABEL[sel.status.status].label}
             </p>
             {selDisruptions.map((d) => (
-              <div key={d.id} className="mt-3 rounded-lg border border-hairline bg-bg p-3">
-                <p className="text-sm leading-snug">{d.rawText}</p>
-                <p className="tabular mt-1.5 text-xs text-ink-faint">
-                  {new Date(d.startDate + "T00:00:00").toLocaleDateString("en-AU", {
-                    weekday: "short",
-                    day: "numeric",
-                    month: "short",
-                  })}
-                  {d.endDate !== d.startDate &&
-                    " – " +
-                      new Date(d.endDate + "T00:00:00").toLocaleDateString("en-AU", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}
-                </p>
-              </div>
+              <DisruptionCard key={d.id} d={d} />
             ))}
           </div>
         )}

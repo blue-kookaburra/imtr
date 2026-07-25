@@ -91,9 +91,9 @@ body {
   }
 }
 
-/* Soft glow behind the map, like a control-room board */
-.board-glow {
+/* Map canvas: cream paper like the official network map */
+.map-canvas {
   background:
-    radial-gradient(ellipse 70% 50% at 50% 40%, rgba(37, 99, 235, 0.07), transparent 70%),
-    radial-gradient(ellipse 40% 30% at 30% 70%, rgba(255, 181, 49, 0.04), transparent 70%);
+    radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 255, 255, 0.55), transparent 75%),
+    #f3efe4;
 }

@@ -73,8 +73,14 @@ export interface Disruption {
   // Optional daily time window, minutes from midnight local. Absent = all day.
   startMin?: number;
   endMin?: number;
+  // Continuous timestamp bounds (ISO) when known (PTV API enrichment).
+  // More precise than date range + daily window; takes precedence.
+  startTs?: string;
+  endTs?: string;
   rawText: string;
   source: "planned-works" | "ptv-api";
+  // Official page with full details (line planned-works page or PTV URL).
+  url?: string;
 }
 
 export interface StatusResponse {

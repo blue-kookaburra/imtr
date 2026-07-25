@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef } from "react";
+
 interface Props {
   at: string | null; // datetime-local value, null = now
   onChange: (at: string | null) => void;
@@ -15,6 +17,18 @@ function nowLocalValue(): string {
 
 export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
   const showingNow = at === null;
+  const pickerRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    const el = pickerRef.current;
+    if (!el) return;
+    // showPicker needs a user gesture; fall back to focus for old browsers.
+    try {
+      el.showPicker();
+    } catch {
+      el.focus();
+    }
+  }
   return (
     <header className="shrink-0 border-b border-hairline bg-elevated/95 px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2.5 backdrop-blur">
       <div className="mx-auto flex max-w-md items-center gap-3">
@@ -31,21 +45,25 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
           >
             Now
           </button>
-          <label
+          <button
+            type="button"
+            onClick={openPicker}
             className={`relative rounded-full px-4 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors duration-150 cursor-pointer ${
               showingNow ? "text-ink-dim" : "bg-accent text-black"
             }`}
           >
             Later
             <input
+              ref={pickerRef}
               type="datetime-local"
               aria-label="Show status at a future date and time"
               min={nowLocalValue()}
               value={at ?? ""}
               onChange={(e) => onChange(e.target.value || null)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              tabIndex={-1}
+              className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
             />
-          </label>
+          </button>
         </div>
       </div>
       {!showingNow && at && (

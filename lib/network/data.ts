@@ -4,63 +4,73 @@ import type { LineDef } from "../types";
 // couple of stations. Scaled up when rendered to SVG.
 export type XY = [number, number];
 
-// Manually placed stations: city core, interchanges and line termini.
-// Everything else is interpolated evenly along the arm between two anchors.
+// Manually placed stations: city core, interchanges, line termini and bend
+// points. Everything else is interpolated evenly along the arm between two
+// anchors. Geometry follows the official Victorian train network map:
+// horizontal / vertical / 45-degree runs, bends placed at stations, City
+// Loop drawn as a box, Altona loop as a dip.
 export const ANCHORS: Record<string, XY> = {
-  // City core + loop
-  "flinders-street": [0, 0],
-  "southern-cross": [-1.5, -0.5],
-  flagstaff: [-1.5, -2],
-  "melbourne-central": [-0.3, -2.6],
-  parliament: [1, -2],
-  "north-melbourne": [-3, -1.5],
-  richmond: [2.5, 1],
-  jolimont: [2.3, -0.7],
-  "south-yarra": [3, 2.5],
+  // City Loop box
+  "flinders-street": [0, 1.2],
+  "southern-cross": [-1.8, 0.6],
+  flagstaff: [-1.8, -1.4],
+  "melbourne-central": [-0.4, -1.4],
+  parliament: [1.2, -1.4],
   // Metro Tunnel
-  arden: [-2.7, -3.2],
-  parkville: [-1.5, -3.8],
-  "state-library": [-0.3, -3.4],
-  "town-hall": [0.4, -1.2],
-  anzac: [1.8, 2.2],
+  arden: [-3.0, -2.4],
+  parkville: [-1.6, -3.0],
+  "state-library": [-0.4, -2.4],
+  "town-hall": [0.5, 0.2],
+  anzac: [1.6, 3.0],
+  // Hubs
+  "north-melbourne": [-3.2, -1.4],
+  richmond: [2.6, 1.2],
+  jolimont: [2.0, -0.4],
+  "south-yarra": [2.6, 3.0],
   // West
-  footscray: [-5, -1.5],
-  newport: [-7.5, 1],
-  laverton: [-10.5, 3.5],
-  werribee: [-13, 6],
-  williamstown: [-8.5, 3.5],
-  sunshine: [-7.5, -3],
-  sunbury: [-12, -7.5],
+  footscray: [-5.2, -1.4],
+  newport: [-8.6, 2.0],
+  seaholme: [-9.5, 2.9],
+  altona: [-10.6, 3.4],
+  westona: [-11.7, 2.9],
+  laverton: [-12.6, 2.0],
+  werribee: [-16.6, 2.0],
+  williamstown: [-8.6, 5.0],
+  sunshine: [-8.6, -4.8],
+  sunbury: [-14.55, -10.75],
   // North
-  essendon: [-4.5, -4.5],
-  broadmeadows: [-6, -8],
-  craigieburn: [-7, -11],
-  coburg: [-2.5, -6.5],
-  upfield: [-3, -10],
+  kensington: [-4.0, -2.2],
+  newmarket: [-4.8, -3.0],
+  craigieburn: [-4.8, -13.0],
+  macaulay: [-2.4, -2.2],
+  upfield: [-2.4, -12.0],
   // North-east
-  "clifton-hill": [2.5, -4],
-  reservoir: [2, -7.5],
-  mernda: [3.5, -12],
-  heidelberg: [5.5, -6.5],
-  hurstbridge: [9, -10],
+  "north-richmond": [3.6, -2.0],
+  "clifton-hill": [3.6, -5.0],
+  mernda: [3.6, -17.0],
+  hurstbridge: [12.6, -14.0],
   // East
-  burnley: [4, 1],
-  camberwell: [7, 0.5],
-  ringwood: [12, -1.5],
-  belgrave: [15.5, 1.5],
-  lilydale: [15, -3.5],
-  alamein: [8.5, 3],
-  "glen-waverley": [10, 4],
+  burnley: [4.6, 1.2],
+  heyington: [5.4, 2.0],
+  kooyong: [6.2, 2.8],
+  "glen-waverley": [16.2, 2.8],
+  camberwell: [8.6, 1.2],
+  riversdale: [9.4, 2.0],
+  alamein: [9.4, 6.5],
+  ringwood: [19.6, 1.2],
+  belgrave: [26.0, 7.6],
+  lilydale: [22.8, -2.0],
   // South-east
-  caulfield: [5, 4.5],
-  dandenong: [10, 9],
-  pakenham: [15, 12.5],
-  "east-pakenham": [16, 13.2],
-  cranbourne: [11.5, 12],
-  moorabbin: [5.5, 8],
-  frankston: [7, 14],
-  "stony-point": [10, 17],
-  sandringham: [3.5, 9.5],
+  caulfield: [5.1, 6.0],
+  oakleigh: [8.1, 8.4],
+  dandenong: [16.1, 8.4],
+  pakenham: [21.7, 14.0],
+  "east-pakenham": [22.7, 14.0],
+  cranbourne: [16.1, 12.0],
+  mordialloc: [5.1, 15.8],
+  frankston: [9.9, 21.4],
+  "stony-point": [14.7, 25.0],
+  sandringham: [2.6, 12.9],
 };
 
 // Arms: [fromAnchor, toAnchor, stations interpolated between them in order].
@@ -68,53 +78,55 @@ export const ARMS: [string, string, string[]][] = [
   // West trunk + branches
   ["north-melbourne", "footscray", ["south-kensington"]],
   ["footscray", "newport", ["seddon", "yarraville", "spotswood"]],
-  // Altona loop drawn in-line (most stopping services run via the loop)
-  ["newport", "laverton", ["seaholme", "altona", "westona"]],
+  // Altona loop stations are all anchors (drawn as a dip)
   ["laverton", "werribee", ["aircraft", "williams-landing", "hoppers-crossing"]],
   ["newport", "williamstown", ["north-williamstown", "williamstown-beach"]],
-  // Sunbury
+  // Sunbury (45° out from Footscray)
   ["footscray", "sunshine", ["middle-footscray", "west-footscray", "tottenham"]],
   [
     "sunshine",
     "sunbury",
     ["albion", "ginifer", "st-albans", "keilor-plains", "watergardens", "diggers-rest"],
   ],
-  // Craigieburn
-  ["north-melbourne", "essendon", ["kensington", "newmarket", "ascot-vale", "moonee-ponds"]],
+  // Craigieburn (45° to Newmarket then straight up)
   [
-    "essendon",
-    "broadmeadows",
-    ["glenbervie", "strathmore", "pascoe-vale", "oak-park", "glenroy", "jacana"],
+    "newmarket",
+    "craigieburn",
+    [
+      "ascot-vale", "moonee-ponds", "essendon", "glenbervie", "strathmore",
+      "pascoe-vale", "oak-park", "glenroy", "jacana", "broadmeadows",
+      "coolaroo", "roxburgh-park",
+    ],
   ],
-  ["broadmeadows", "craigieburn", ["coolaroo", "roxburgh-park"]],
-  // Upfield
+  // Upfield (45° to Macaulay then straight up)
   [
-    "north-melbourne",
-    "coburg",
-    ["macaulay", "flemington-bridge", "royal-park", "jewell", "brunswick", "anstey", "moreland"],
+    "macaulay",
+    "upfield",
+    [
+      "flemington-bridge", "royal-park", "jewell", "brunswick", "anstey",
+      "moreland", "coburg", "batman", "merlynston", "fawkner", "gowrie",
+    ],
   ],
-  ["coburg", "upfield", ["batman", "merlynston", "fawkner", "gowrie"]],
-  // Clifton Hill group
-  ["jolimont", "clifton-hill", ["west-richmond", "north-richmond", "collingwood", "victoria-park"]],
+  // Clifton Hill group (45° to North Richmond then straight up)
+  ["jolimont", "north-richmond", ["west-richmond"]],
+  ["north-richmond", "clifton-hill", ["collingwood", "victoria-park"]],
   [
     "clifton-hill",
-    "reservoir",
-    ["rushall", "merri", "northcote", "croxton", "thornbury", "bell", "preston", "regent"],
-  ],
-  [
-    "reservoir",
     "mernda",
-    ["ruthven", "keon-park", "thomastown", "lalor", "epping", "south-morang", "middle-gorge", "hawkstowe"],
+    [
+      "rushall", "merri", "northcote", "croxton", "thornbury", "bell",
+      "preston", "regent", "reservoir", "ruthven", "keon-park", "thomastown",
+      "lalor", "epping", "south-morang", "middle-gorge", "hawkstowe",
+    ],
   ],
   [
     "clifton-hill",
-    "heidelberg",
-    ["westgarth", "dennis", "fairfield", "alphington", "darebin", "ivanhoe", "eaglemont"],
-  ],
-  [
-    "heidelberg",
     "hurstbridge",
-    ["rosanna", "macleod", "watsonia", "greensborough", "montmorency", "eltham", "diamond-creek", "wattle-glen"],
+    [
+      "westgarth", "dennis", "fairfield", "alphington", "darebin", "ivanhoe",
+      "eaglemont", "heidelberg", "rosanna", "macleod", "watsonia",
+      "greensborough", "montmorency", "eltham", "diamond-creek", "wattle-glen",
+    ],
   ],
   // Burnley group
   ["richmond", "burnley", ["east-richmond"]],
@@ -123,16 +135,8 @@ export const ARMS: [string, string, string[]][] = [
     "camberwell",
     "ringwood",
     [
-      "east-camberwell",
-      "canterbury",
-      "chatham",
-      "union",
-      "box-hill",
-      "laburnum",
-      "blackburn",
-      "nunawading",
-      "mitcham",
-      "heatherdale",
+      "east-camberwell", "canterbury", "chatham", "union", "box-hill",
+      "laburnum", "blackburn", "nunawading", "mitcham", "heatherdale",
     ],
   ],
   [
@@ -141,42 +145,23 @@ export const ARMS: [string, string, string[]][] = [
     ["heathmont", "bayswater", "boronia", "ferntree-gully", "upper-ferntree-gully", "upwey", "tecoma"],
   ],
   ["ringwood", "lilydale", ["ringwood-east", "croydon", "mooroolbark"]],
-  ["camberwell", "alamein", ["riversdale", "willison", "hartwell", "burwood", "ashburton"]],
+  ["riversdale", "alamein", ["willison", "hartwell", "burwood", "ashburton"]],
+  // Glen Waverley (45° to Kooyong then straight right)
   [
-    "burnley",
+    "kooyong",
     "glen-waverley",
     [
-      "heyington",
-      "kooyong",
-      "tooronga",
-      "gardiner",
-      "glen-iris",
-      "darling",
-      "east-malvern",
-      "holmesglen",
-      "jordanville",
-      "mount-waverley",
-      "syndal",
+      "tooronga", "gardiner", "glen-iris", "darling", "east-malvern",
+      "holmesglen", "jordanville", "mount-waverley", "syndal",
     ],
   ],
   // Caulfield group
   ["south-yarra", "caulfield", ["hawksburn", "toorak", "armadale", "malvern"]],
+  ["caulfield", "oakleigh", ["carnegie", "murrumbeena", "hughesdale"]],
   [
-    "caulfield",
+    "oakleigh",
     "dandenong",
-    [
-      "carnegie",
-      "murrumbeena",
-      "hughesdale",
-      "oakleigh",
-      "huntingdale",
-      "clayton",
-      "westall",
-      "springvale",
-      "sandown-park",
-      "noble-park",
-      "yarraman",
-    ],
+    ["huntingdale", "clayton", "westall", "springvale", "sandown-park", "noble-park", "yarraman"],
   ],
   [
     "dandenong",
@@ -184,25 +169,18 @@ export const ARMS: [string, string, string[]][] = [
     ["hallam", "narre-warren", "berwick", "beaconsfield", "officer", "cardinia-road"],
   ],
   ["dandenong", "cranbourne", ["lynbrook", "merinda-park"]],
-  ["caulfield", "moorabbin", ["glenhuntly", "ormond", "mckinnon", "bentleigh", "patterson"]],
   [
-    "moorabbin",
-    "frankston",
+    "caulfield",
+    "mordialloc",
     [
-      "highett",
-      "southland",
-      "cheltenham",
-      "mentone",
-      "parkdale",
-      "mordialloc",
-      "aspendale",
-      "edithvale",
-      "chelsea",
-      "bonbeach",
-      "carrum",
-      "seaford",
-      "kananook",
+      "glenhuntly", "ormond", "mckinnon", "bentleigh", "patterson", "moorabbin",
+      "highett", "southland", "cheltenham", "mentone", "parkdale",
     ],
+  ],
+  [
+    "mordialloc",
+    "frankston",
+    ["aspendale", "edithvale", "chelsea", "bonbeach", "carrum", "seaford", "kananook"],
   ],
   [
     "frankston",
@@ -213,16 +191,8 @@ export const ARMS: [string, string, string[]][] = [
     "south-yarra",
     "sandringham",
     [
-      "prahran",
-      "windsor",
-      "balaclava",
-      "ripponlea",
-      "elsternwick",
-      "gardenvale",
-      "north-brighton",
-      "middle-brighton",
-      "brighton-beach",
-      "hampton",
+      "prahran", "windsor", "balaclava", "ripponlea", "elsternwick", "gardenvale",
+      "north-brighton", "middle-brighton", "brighton-beach", "hampton",
     ],
   ],
 ];

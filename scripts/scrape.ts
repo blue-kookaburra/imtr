@@ -53,7 +53,7 @@ for (const url of urls) {
     console.warn(`WARN: failed to fetch ${url}`);
     continue;
   }
-  const parsed = parsePage(html, now);
+  const parsed = parsePage(html, now, url);
   console.log(`${url.split("/").pop()}: ${parsed.length} disruptions`);
   for (const d of parsed) all.set(d.id, d);
   ok++;
