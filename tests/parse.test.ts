@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { extractTableHtml, parsePage, tableRows } from "@/lib/scrape/parse";
+import { extractArticleUrls, extractTableHtml, parseArticle, parsePage, tableRows } from "@/lib/scrape/parse";
 import { computeStatus, computeCalendar } from "@/lib/status";
 import { EDGES, STATIONS, edgesBetween } from "@/lib/network/build";
 
@@ -101,6 +101,53 @@ describe("parser row formats", () => {
     // Beyond Box Hill on Belgrave line: unaffected
     const beyond = status.segments.find((s) => s.edgeId === "belgrave:ringwood-heathmont");
     expect(beyond!.status).toBe("running");
+  });
+});
+
+describe("article parsing", () => {
+  const ARTICLE = readFileSync(join(__dirname, "fixtures", "article-werribee.html"), "utf-8");
+  const URL = "https://transport.vic.gov.au/disruptions/disruptions-information/article/test";
+
+  it("extracts exact timestamps from the article page", () => {
+    const d = parseArticle(ARTICLE, URL)!;
+    expect(d).not.toBeNull();
+    expect(d.lineIds.sort()).toEqual(["werribee", "williamstown"]);
+    // FromDate 2026-07-25 21:00 Melbourne = 11:00 UTC (AEST)
+    expect(d.startTs).toBe("2026-07-25T11:00:00.000Z");
+    expect(d.endTs).toBe("2026-07-26T17:00:00.000Z");
+    expect(d.startDate).toBe("2026-07-25");
+    expect(d.endDate).toBe("2026-07-27");
+    expect(d.stations).toContain("north-melbourne");
+    expect(d.stations).toContain("williamstown");
+    expect(d.url).toBe(URL);
+  });
+
+  it("trains still running before the start timestamp", () => {
+    const d = parseArticle(ARTICLE, URL)!;
+    // Sat 25 July, 8:00pm Melbourne = 10:00 UTC — before the 9pm start
+    const before = computeStatus([d], new Date("2026-07-25T10:00:00Z"), "2026-07-25T00:00:00Z");
+    const seg = before.segments.find((s) => s.edgeId === "williamstown:newport-north-williamstown");
+    expect(seg!.status).toBe("running");
+    // Sat 25 July, 10:00pm Melbourne = 12:00 UTC — after start
+    const after = computeStatus([d], new Date("2026-07-25T12:00:00Z"), "2026-07-25T00:00:00Z");
+    const seg2 = after.segments.find((s) => s.edgeId === "williamstown:newport-north-williamstown");
+    expect(seg2!.status).toBe("bus-replacement");
+  });
+
+  it("calendar shows partial on the start day, disrupted on the full day", () => {
+    const d = parseArticle(ARTICLE, URL)!;
+    const days = computeCalendar("williamstown", [d], "2026-07-25", "2026-07-27", "2026-07-25T00:00:00Z", "2026-08-22");
+    const byDate = Object.fromEntries(days.map((x) => [x.date, x]));
+    expect(byDate["2026-07-25"].status).toBe("partial");
+    expect(byDate["2026-07-25"].summary).toContain("Trains run until 9:00pm");
+    expect(byDate["2026-07-26"].status).toBe("disrupted");
+    expect(byDate["2026-07-27"].status).toBe("partial");
+  });
+
+  it("finds article links on line pages", () => {
+    const urls = extractArticleUrls(FIXTURE);
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls[0]).toContain("/disruptions/disruptions-information/article/");
   });
 });
 

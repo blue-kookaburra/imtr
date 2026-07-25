@@ -5,7 +5,7 @@
 import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parsePage } from "../lib/scrape/parse";
+import { extractArticleUrls, parseArticle, parsePage } from "../lib/scrape/parse";
 import type { Disruption } from "../lib/types";
 
 const BASE = "https://transport.vic.gov.au";
@@ -45,7 +45,8 @@ if (urls.size === 0) {
 }
 
 const now = new Date();
-const all = new Map<string, Disruption>();
+const tableRows = new Map<string, Disruption>();
+const articleUrls = new Set<string>();
 let ok = 0;
 for (const url of urls) {
   const html = curl(url);
@@ -54,8 +55,9 @@ for (const url of urls) {
     continue;
   }
   const parsed = parsePage(html, now, url);
-  console.log(`${url.split("/").pop()}: ${parsed.length} disruptions`);
-  for (const d of parsed) all.set(d.id, d);
+  for (const a of extractArticleUrls(html)) articleUrls.add(a);
+  console.log(`${url.split("/").pop()}: ${parsed.length} table rows`);
+  for (const d of parsed) tableRows.set(d.id, d);
   ok++;
 }
 
@@ -64,8 +66,34 @@ if (ok === 0) {
   process.exit(1);
 }
 
+// Article pages carry exact start/end timestamps the tables lack.
+const articles: Disruption[] = [];
+for (const aUrl of articleUrls) {
+  const html = curl(aUrl);
+  if (!html) {
+    console.warn(`WARN: failed to fetch article ${aUrl}`);
+    continue;
+  }
+  const d = parseArticle(html, aUrl);
+  if (d) {
+    articles.push(d);
+    console.log(`article ${aUrl.split("/").pop()!.slice(0, 60)}…: ok`);
+  }
+}
+
+// A table row is redundant when an article covers the same lines and dates.
+const kept = [...tableRows.values()].filter(
+  (row) =>
+    !articles.some(
+      (a) =>
+        a.startDate <= row.endDate &&
+        a.endDate >= row.startDate &&
+        row.lineIds.every((id) => a.lineIds.includes(id))
+    )
+);
+
 const out = {
-  disruptions: [...all.values()],
+  disruptions: [...articles, ...kept],
   fetchedAt: now.toISOString(),
   pagesTried: urls.size,
   pagesOk: ok,

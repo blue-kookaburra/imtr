@@ -1,6 +1,169 @@
 {
   "disruptions": [
     {
+      "id": "art-364599",
+      "lineIds": [
+        "belgrave"
+      ],
+      "fromStation": "bayswater",
+      "toStation": "belgrave",
+      "stations": [
+        "bayswater",
+        "belgrave"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm Monday 27 July to last service Monday 3 August 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-line-buses-replace-trains-from-8-30pm-monday-27-july-to-last-service-monday-3-august-2026",
+      "startDate": "2026-07-27",
+      "endDate": "2026-08-04",
+      "startTs": "2026-07-27T10:30:00.000Z",
+      "endTs": "2026-08-03T17:00:00.000Z"
+    },
+    {
+      "id": "art-365155",
+      "lineIds": [
+        "hurstbridge"
+      ],
+      "fromStation": "heidelberg",
+      "toStation": "hurstbridge",
+      "stations": [
+        "heidelberg",
+        "hurstbridge"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 27 July to Wednesday 29 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-27-july-to-wednesday-29-july-2026",
+      "startDate": "2026-07-27",
+      "endDate": "2026-07-29",
+      "startMin": 1230
+    },
+    {
+      "id": "art-366097",
+      "lineIds": [
+        "sandringham"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "sandringham",
+      "stations": [
+        "flinders-street",
+        "sandringham"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8:30pm Friday 24 July to last service Sunday 26 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sandringham-line-buses-replace-trains-from-8-30pm-friday-24-july-to-last-service-sunday-26-july",
+      "startDate": "2026-07-24",
+      "endDate": "2026-07-27",
+      "startTs": "2026-07-24T10:30:00.000Z",
+      "endTs": "2026-07-26T17:00:00.000Z"
+    },
+    {
+      "id": "art-366110",
+      "lineIds": [
+        "pakenham"
+      ],
+      "wholeLine": true,
+      "parsed": false,
+      "rawText": "Service changes from Saturday night 25 July to last service Sunday 26 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/gippsland-line-service-changes-from-saturday-night-25-july-to-last-service-sunday-26-july-2026",
+      "startDate": "2026-07-25",
+      "endDate": "2026-07-27",
+      "startTs": "2026-07-25T08:00:00.000Z",
+      "endTs": "2026-07-26T17:00:00.000Z"
+    },
+    {
+      "id": "art-366095",
+      "lineIds": [
+        "werribee",
+        "williamstown"
+      ],
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
+      "stations": [
+        "north-melbourne",
+        "newport",
+        "williamstown"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 9.30pm Saturday 25 July to last service Sunday 26 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-and-williamstown-lines-buses-replace-trains-from-9-30pm-saturday-25-july-to-last-service-sunday-26-july-2026",
+      "startDate": "2026-07-25",
+      "endDate": "2026-07-27",
+      "startTs": "2026-07-25T11:00:00.000Z",
+      "endTs": "2026-07-26T17:00:00.000Z"
+    },
+    {
+      "id": "art-364255",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Tuesday 28 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-tuesday-28-july-2026",
+      "startDate": "2026-07-28",
+      "endDate": "2026-07-28",
+      "startMin": 1430
+    },
+    {
+      "id": "art-364260",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Thursday 30 July 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-thursday-30-july-2026",
+      "startDate": "2026-07-30",
+      "endDate": "2026-07-30",
+      "startMin": 1430
+    },
+    {
+      "id": "art-366038",
+      "lineIds": [
+        "werribee",
+        "williamstown",
+        "craigieburn",
+        "upfield"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "southern-cross",
+      "stations": [
+        "flinders-street",
+        "southern-cross"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Trains start and end at Southern Cross from 9pm to last service each night, Sunday 2 August to Wednesday 5 August 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/craigieburn-upfield-werribee-and-williamstown-lines-trains-start-and-end-at-southern-cross-from-9pm-to-last-service-each-night-sunday-2-august-to-wednesday-5-august-2026",
+      "startDate": "2026-08-02",
+      "endDate": "2026-08-05",
+      "startMin": 1260
+    },
+    {
       "id": "d1opg230",
       "lineIds": [
         "belgrave",
@@ -24,25 +187,6 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
-      "id": "d1ack976",
-      "lineIds": [
-        "belgrave"
-      ],
-      "fromStation": "bayswater",
-      "toStation": "belgrave",
-      "stations": [
-        "bayswater",
-        "belgrave"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-27",
-      "endDate": "2026-08-03",
-      "rawText": "Buses replace trains from Bayswater to Belgrave.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
       "id": "doqfjf7",
       "lineIds": [
         "hurstbridge"
@@ -62,38 +206,6 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
     },
     {
-      "id": "d1goo3hq",
-      "lineIds": [
-        "hurstbridge"
-      ],
-      "fromStation": "heidelberg",
-      "toStation": "hurstbridge",
-      "stations": [
-        "heidelberg",
-        "hurstbridge"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-27",
-      "endDate": "2026-07-29",
-      "rawText": "Buses replace trains between Heidelberg and Hurstbridge.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
-    },
-    {
-      "id": "d1ml4fgm",
-      "lineIds": [
-        "sandringham"
-      ],
-      "wholeLine": true,
-      "parsed": true,
-      "startDate": "2026-07-24",
-      "endDate": "2026-07-26",
-      "rawText": "Buses replace trains.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/sandringham-line-disruptions"
-    },
-    {
       "id": "d17m8vzb",
       "lineIds": [
         "werribee"
@@ -111,68 +223,9 @@
       "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "dsg6oa6",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-25",
-      "endDate": "2026-07-26",
-      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "dps3tc",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-28",
-      "endDate": "2026-07-28",
-      "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "d1uommjm",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-30",
-      "endDate": "2026-07-30",
-      "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-07-25T10:19:46.779Z",
+  "fetchedAt": "2026-07-25T10:53:15.954Z",
   "pagesTried": 10,
   "pagesOk": 10
 }

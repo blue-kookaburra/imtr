@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/build";
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
+import { melbourneLocalToIso, melbourneTimeLabel } from "./meltz";
 
 // Does this disruption apply at the given Melbourne-local moment?
 function disruptionActiveAt(d: Disruption, t: MelTime, at: Date): boolean {
@@ -164,20 +165,37 @@ export function computeCalendar(
       if (hits.length === 0) {
         days.push({ date: dateStr, status: "normal", disruptionIds: [] });
       } else {
-        const timeWindowed = hits.every((h) => h.startMin !== undefined || h.endMin !== undefined);
-        const parsedAll = hits.every((h) => h.parsed);
+        // A day is only fully "disrupted" when some hit covers the whole
+        // service day; edge days of a timestamped span are partial.
+        const dayStart = new Date(melbourneLocalToIso(`${dateStr} 06:00:00`));
+        const dayEnd = new Date(melbourneLocalToIso(`${dateStr} 21:00:00`));
+        const coversFullDay = (h: Disruption): boolean => {
+          if (h.startTs || h.endTs) {
+            const from = h.startTs ? new Date(h.startTs) : new Date(0);
+            const to = h.endTs ? new Date(h.endTs) : new Date(8640000000000000);
+            return from <= dayStart && to >= dayEnd;
+          }
+          return h.startMin === undefined && h.endMin === undefined;
+        };
+        const fullDay = hits.some((h) => h.parsed && coversFullDay(h));
         const first = hits[0];
         let summary = first.rawText;
-        if (first.startMin !== undefined) {
-          summary = `Trains run until ${minutesToLabel(first.startMin)}, then ${first.rawText
-            .charAt(0)
-            .toLowerCase()}${first.rawText.slice(1)}`;
+        if (!fullDay) {
+          if (first.startTs && new Date(first.startTs) > dayStart) {
+            summary = `Trains run until ${melbourneTimeLabel(first.startTs)}, then ${first.rawText
+              .charAt(0)
+              .toLowerCase()}${first.rawText.slice(1)}`;
+          } else if (first.endTs && new Date(first.endTs) < dayEnd) {
+            summary = `${first.rawText} until ${melbourneTimeLabel(first.endTs)}, then trains resume`;
+          } else if (first.startMin !== undefined) {
+            summary = `Trains run until ${minutesToLabel(first.startMin)}, then ${first.rawText
+              .charAt(0)
+              .toLowerCase()}${first.rawText.slice(1)}`;
+          }
         }
         days.push({
           date: dateStr,
-          // Partial when time-windowed or when we couldn't fully parse (warn,
-          // don't claim a full-day outage we're not sure about).
-          status: timeWindowed || !parsedAll ? "partial" : "disrupted",
+          status: fullDay ? "disrupted" : "partial",
           summary,
           disruptionIds: hits.map((h) => h.id),
         });

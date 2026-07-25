@@ -1,6 +1,7 @@
 import type { Disruption, LineId } from "../types";
 import { LINES } from "../network/data";
 import { findStationId } from "../network/build";
+import { melbourneDateOf, melbourneLocalToIso } from "../meltz";
 
 // Parses transport.vic.gov.au planned-works pages. The page is a Next.js
 // app whose disruption tables live in the embedded __NEXT_DATA__ JSON as
@@ -130,7 +131,7 @@ function resolveStation(name: string): string | undefined {
 // per line downstream.
 function matchStations(text: string): string[] | null {
   const m = text.match(
-    /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,? (?:each|nightly|daily|after|until|while|due|stations)\b|$)/i
+    /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why)\b|\s+\d|$)/i
   );
   if (!m) return null;
   const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
@@ -161,6 +162,132 @@ function hashId(s: string): string {
 
 const DISRUPTION_KEYWORDS =
   /buses replace|bus replacement|no trains|trains (?:do )?not run|closed|coaches replace|service(?:s)? (?:will )?not run/i;
+
+// Article page URLs linked from a planned-works line page. These per-
+// disruption pages carry exact start/end timestamps the tables lack.
+export function extractArticleUrls(pageHtml: string): string[] {
+  const urls = new Set<string>();
+  const re = /disruptions-information\/article\/([a-z0-9-]{10,})/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(pageHtml))) {
+    urls.add(`https://transport.vic.gov.au/disruptions/disruptions-information/article/${m[1]}`);
+  }
+  return [...urls];
+}
+
+interface ArticleDisruption {
+  ID: number;
+  Title: string;
+  ArticleTitle: string;
+  SubtitleMessage: string;
+  FromDate: string; // "2026-07-25 21:00:00" Melbourne local
+  ToDate: string;
+  Article: string; // HTML body
+  Lines: Record<string, { Line: string }> | null;
+}
+
+// Parse a disruption article page into a timestamped Disruption.
+// Returns null for articles that don't describe a service gap (e.g. pure
+// timetable-change notices).
+export function parseArticle(pageHtml: string, articleUrl: string, refDate = new Date()): Disruption | null {
+  const m = pageHtml.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (!m) return null;
+  let a: ArticleDisruption;
+  try {
+    a = JSON.parse(m[1])?.props?.pageProps?.disruption;
+  } catch {
+    return null;
+  }
+  if (!a || !a.FromDate || !a.ToDate) return null;
+
+  const plainArticle = decodeEntities(a.Article ?? "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ");
+  const allText = `${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""} ${plainArticle}`;
+
+  const SERVICE_GAP =
+    /buses replace|bus replacement|no trains|trains (?:do )?not run|coaches replace|closed|start and end at/i;
+  if (!SERVICE_GAP.test(allText)) return null;
+
+  // Lines from the structured Lines map, falling back to name-matching.
+  const lineNames = Object.values(a.Lines ?? {}).map((l) => l.Line.toLowerCase());
+  let lineIds = LINES.filter((l) => lineNames.includes(l.name.toLowerCase())).map((l) => l.id);
+  if (lineIds.length === 0) lineIds = matchLines(allText);
+  if (lineIds.length === 0) return null;
+
+  // Affected section: "between X(, Y) and Z" / "from X to Z", or
+  // "trains start and end at X" => the city end up to X is out.
+  let stations = matchStations(allText);
+  if (!stations) {
+    const se = allText.match(/start and end at ([A-Za-z' ]+?)(?:[.,]|$| from| between)/i);
+    if (se) {
+      const s = findStationId(se[1]);
+      if (s && s !== "flinders-street") stations = ["flinders-street", s];
+    }
+  }
+
+  const startTs = melbourneLocalToIso(a.FromDate);
+  const endTs = melbourneLocalToIso(a.ToDate);
+  const summary = a.ArticleTitle?.includes(":")
+    ? a.ArticleTitle.slice(a.ArticleTitle.indexOf(":") + 1).trim()
+    : (a.ArticleTitle ?? a.SubtitleMessage);
+
+  const base = {
+    id: `art-${a.ID}`,
+    lineIds,
+    fromStation: stations?.[0],
+    toStation: stations?.[stations.length - 1],
+    stations: stations ?? undefined,
+    wholeLine: !stations,
+    parsed: !!stations || !/\b(between|from [A-Z])/i.test(a.ArticleTitle ?? ""),
+    rawText: summary,
+    source: "planned-works" as const,
+    url: articleUrl,
+  };
+
+  let startDate = melbourneDateOf(startTs);
+  let endDate = melbourneDateOf(endTs);
+  let tsTrusted = true;
+  if (startDate > endDate) {
+    // The CMS sometimes publishes a bad FromDate. Fall back to the explicit
+    // date range in the title ("Sunday 2 August to Wednesday 5 August").
+    const rm = (a.ArticleTitle ?? "").match(
+      /((?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\s+\d{1,2}\s+[A-Za-z]+)\s+(?:to|until|-|–)\s+((?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day\s+\d{1,2}\s+[A-Za-z]+)/
+    );
+    const s = rm && parseDayMonth(rm[1], refDate);
+    const e = rm && parseDayMonth(rm[2], refDate);
+    if (!s || !e || s > e) return null; // can't trust anything here
+    startDate = s;
+    endDate = e;
+    tsTrusted = false;
+  }
+
+  // "each night" disruptions repeat daily: model as a date range with a
+  // daily from-time window, not one continuous timestamp span (which would
+  // wrongly black out the daytime in between).
+  if (/each night|nightly/i.test(allText)) {
+    const { startMin } = matchTimeWindow(allText);
+    // ToDate is usually the small hours after the final night; step back to
+    // name the final service night.
+    const lastNight = tsTrusted
+      ? melbourneDateOf(new Date(new Date(endTs).getTime() - 4 * 3600e3).toISOString())
+      : endDate;
+    return {
+      ...base,
+      startDate,
+      endDate: lastNight,
+      startMin: startMin ?? 21 * 60,
+    };
+  }
+
+  return {
+    ...base,
+    startDate,
+    endDate,
+    startTs: tsTrusted ? startTs : undefined,
+    endTs: tsTrusted ? endTs : undefined,
+  };
+}
 
 // Parse one page's tables into disruptions. refDate anchors year inference.
 // pageUrl becomes each disruption's official-details link.
