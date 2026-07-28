@@ -774,9 +774,12 @@ describe("per-station status", () => {
       AT,
       UPDATED
     );
-    // Richmond is warning on Frankston and boundary on Sandringham; the
-    // stronger signal wins overall.
-    expect(stationStatus(res, "hampton")!.status).toBe("cut");
+    // South Yarra is on both lines: warning on Frankston (unparseable) and cut
+    // on Sandringham (inside richmond..brighton-beach). The stronger wins.
+    const sy = stationStatus(res, "south-yarra")!;
+    expect(sy.status).toBe("cut");
+    expect(sy.lines.find((l) => l.lineId === "frankston")!.status).toBe("warning");
+    expect(sy.lines.find((l) => l.lineId === "sandringham")!.status).toBe("cut");
   });
 
   it("emits a status for every rendered station and no orphans", () => {
@@ -860,10 +863,20 @@ export function computeStationStatuses(
       if (isServiceRunning(lineId, t)) {
         for (const d of active) {
           if (!d.lineIds.includes(lineId)) continue;
-          if (!stationInSection(station.id, d, lineId)) continue;
+
           const span = lineSpan(d, lineId);
-          const atEdge = span != null && (span.from === station.id || span.to === station.id);
-          const kind: StationStatusKind = atEdge ? "boundary" : "cut";
+          // Mirror computeStatus's precedence exactly. A disruption with no
+          // usable span is a line-level warning, already applied above —
+          // never a per-station blackout. This is the fail-visible rule.
+          let kind: StationStatusKind | null = null;
+          if (span) {
+            if (!stationInSection(station.id, d, lineId)) continue;
+            kind = span.from === station.id || span.to === station.id ? "boundary" : "cut";
+          } else if (d.parsed && d.wholeLine) {
+            kind = "cut";
+          }
+          if (!kind) continue;
+
           if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
           ids.add(d.id);
         }
