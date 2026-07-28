@@ -817,6 +817,7 @@ Create `tests/station-status.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
 import { computeStatus } from "@/lib/status";
+import { STATIONS } from "@/lib/network/build";
 import type { Disruption } from "@/lib/types";
 
 // A Wednesday midday in Melbourne — every line is inside timetabled hours,
@@ -922,11 +923,102 @@ describe("per-station status", () => {
     expect(sy.lines.find((l) => l.lineId === "sandringham")!.status).toBe("cut");
   });
 
-  it("emits a status for every rendered station and no orphans", () => {
+  it("cuts a section end that is also the line terminus", () => {
+    // Buses between Ringwood and Belgrave. Belgrave is the end of the line, so
+    // there is no far side for a train to arrive from — every service to it is
+    // replaced. Calling that "trains terminate here" would be a false all-clear.
+    const res = computeStatus(
+      [
+        disruption({
+          lineIds: ["belgrave"],
+          stations: ["ringwood", "belgrave"],
+          fromStation: "ringwood",
+          toStation: "belgrave",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "belgrave")!.status).toBe("cut");
+    // Ringwood does have a far side, so it really is a terminating point.
+    expect(stationStatus(res, "ringwood")!.status).toBe("boundary");
+  });
+
+  it("keeps an unmapped disruption visible even when a confident state outranks it", () => {
+    const res = computeStatus(
+      [
+        disruption({ id: "d1", parsed: false, wholeLine: false, stations: undefined }),
+        disruption({
+          id: "d2",
+          stations: ["caulfield", "carrum"],
+          fromStation: "caulfield",
+          toStation: "carrum",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    const carrum = stationStatus(res, "carrum")!;
+    expect(carrum.status).toBe("boundary");
+    // The parser failed to understand something else on this line. That must
+    // survive alongside the confident state, not be masked by it.
+    expect(carrum.unmapped).toBe(true);
+    expect(carrum.lines.find((l) => l.lineId === "frankston")!.unmapped).toBe(true);
+  });
+
+  it("reports no-service outside timetabled hours rather than normal", () => {
+    // 3am Melbourne on a Wednesday — nothing is timetabled.
+    const at3am = new Date("2026-08-04T17:00:00Z");
+    const res = computeStatus([], at3am, UPDATED);
+    const sy = stationStatus(res, "south-yarra")!;
+    expect(sy.status).toBe("no-service");
+    expect(sy.lines.every((l) => l.status === "no-service")).toBe(true);
+  });
+
+  it("does not let one sleeping line outrank the running ones", () => {
+    // Stony Point runs a sparse timetable; whatever the hour, a station's
+    // overall status must never be dragged to no-service while other lines run.
     const res = computeStatus([], AT, UPDATED);
+    for (const s of res.stations) {
+      const running = s.lines.filter((l) => l.status !== "no-service");
+      if (running.length > 0) expect(s.status).not.toBe("no-service");
+    }
+  });
+
+  it("cuts every station when a whole line is replaced", () => {
+    const res = computeStatus(
+      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "alamein")!.status).toBe("cut");
+    expect(stationStatus(res, "riversdale")!.status).toBe("cut");
+  });
+
+  it("keeps the overall status equal to the worst running line", () => {
+    const res = computeStatus(
+      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
+      AT,
+      UPDATED
+    );
+    for (const s of res.stations) {
+      const running = s.lines.filter((l) => l.status !== "no-service");
+      if (!running.length) continue;
+      const rank = { "no-service": -1, normal: 0, warning: 1, boundary: 2, cut: 3 } as const;
+      const worst = running.reduce((a, l) => (rank[l.status] > rank[a] ? l.status : a), "normal" as const);
+      expect(s.status, s.stationId).toBe(worst);
+    }
+  });
+
+  it("emits a status for every station in the network model", () => {
+    const res = computeStatus([], AT, UPDATED);
+    expect(res.stations.length).toBe(STATIONS.size);
+    for (const s of res.stations) expect(s.lines.length).toBeGreaterThan(0);
+    // The City Loop is not modelled at all, so these never appear.
     const ids = new Set(res.stations.map((s) => s.stationId));
-    expect(ids.has("flagstaff")).toBe(false);
-    expect(ids.has("richmond")).toBe(true);
+    for (const orphan of ["flagstaff", "melbourne-central", "parliament"]) {
+      expect(ids.has(orphan), orphan).toBe(false);
+    }
   });
 });
 ```
@@ -943,15 +1035,31 @@ In `lib/types.ts`, after the `SegmentStatus` interface:
 ```ts
 export type StationStatusKind =
   | "normal" // trains as timetabled
-  | "boundary" // trains terminate here, buses beyond
-  | "cut" // inside the affected section, no trains
-  | "warning"; // a disruption touches this line but couldn't be parsed
+  | "no-service" // outside timetabled hours — not a fault
+  | "warning" // a disruption touches this line but couldn't be parsed
+  | "boundary" // trains still reach here from the far side, buses beyond
+  | "cut"; // no trains reach here at all
+
+export interface StationLineStatus {
+  lineId: LineId;
+  status: StationStatusKind;
+  // True when a disruption touches this line that the parser could not map to
+  // a section. Deliberately separate from `status` so a confident boundary or
+  // cut can never hide the fact that something else is unaccounted for — the
+  // fail-visible rule applies per line, not just to the strongest signal.
+  unmapped: boolean;
+}
 
 export interface StationStatus {
   stationId: string;
+  // The worst state across every line this station serves — NOT a statement
+  // about the station as a whole. At an interchange like Flinders Street one
+  // closed line makes this `cut` while eleven others run normally, so UI that
+  // wants "is my line running" must read `lines`, not this.
   status: StationStatusKind;
+  unmapped: boolean; // any line has an unmapped disruption
   disruptionIds: string[];
-  lines: { lineId: LineId; status: StationStatusKind }[];
+  lines: StationLineStatus[];
 }
 ```
 
@@ -967,12 +1075,34 @@ In `lib/status.ts`, add after the `stationInSection` function:
 
 ```ts
 // Strongest signal wins when several lines disagree at one station.
+// `no-service` ranks below everything and is filtered out before this is used,
+// so a single sleeping line can never outrank eleven running ones.
 const STATION_RANK: Record<StationStatusKind, number> = {
+  "no-service": -1,
   normal: 0,
   warning: 1,
   boundary: 2,
   cut: 3,
 };
+
+// Is this station at an end of the affected section that trains can still
+// reach from the far side? An end that is also the line's terminus has no far
+// side — every service to it is replaced — so it is `cut`, not `boundary`.
+// Reporting "trains terminate here" at Belgrave during a Ringwood–Belgrave
+// shutdown would be a false all-clear, which is exactly what fail-visible
+// exists to prevent.
+function reachableFromBeyond(
+  stationId: string,
+  span: { from: string; to: string },
+  lineId: LineId
+): boolean {
+  const line = LINE_DEFS.find((l) => l.id === lineId);
+  if (!line) return false;
+  const i = line.stations.indexOf(stationId);
+  if (stationId === span.from) return i > 0;
+  if (stationId === span.to) return i < line.stations.length - 1;
+  return false;
+}
 
 // Per-station status at a moment. A station at the very edge of a section is
 // `boundary`, not `cut` — trains still reach it from the far side, which is
@@ -985,54 +1115,60 @@ export function computeStationStatuses(
   const out: StationStatus[] = [];
 
   for (const station of STATIONS.values()) {
-    // Orphan stations (the unmodelled City Loop) have no edges and no status.
-    if (!RENDERED_STATIONS.has(station.id)) continue;
-
-    const perLine: { lineId: LineId; status: StationStatusKind }[] = [];
+    const perLine: StationLineStatus[] = [];
     const ids = new Set<string>();
 
     for (const lineId of station.lines) {
-      let status: StationStatusKind = "normal";
-
       const warned = lineWarnings.get(lineId);
-      if (warned && warned.size > 0) {
-        status = "warning";
-        for (const id of warned) ids.add(id);
+      const unmapped = warned !== undefined && warned.size > 0;
+      if (warned) for (const id of warned) ids.add(id);
+
+      // Outside timetabled hours there is nothing to disrupt. Say that plainly
+      // instead of reporting "normal", which a reader takes as "trains running".
+      if (!isServiceRunning(lineId, t)) {
+        perLine.push({ lineId, status: "no-service", unmapped });
+        continue;
       }
 
-      if (isServiceRunning(lineId, t)) {
-        for (const d of active) {
-          if (!d.lineIds.includes(lineId)) continue;
+      let status: StationStatusKind = unmapped ? "warning" : "normal";
 
-          const span = lineSpan(d, lineId);
-          // Mirror computeStatus's precedence exactly. A disruption with no
-          // usable span is a line-level warning, already applied above —
-          // never a per-station blackout. This is the fail-visible rule.
-          let kind: StationStatusKind | null = null;
-          if (span) {
-            if (!stationInSection(station.id, d, lineId)) continue;
-            kind = span.from === station.id || span.to === station.id ? "boundary" : "cut";
-          } else if (d.parsed && d.wholeLine) {
-            kind = "cut";
-          }
-          if (!kind) continue;
+      for (const d of active) {
+        if (!d.lineIds.includes(lineId)) continue;
 
-          if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
-          ids.add(d.id);
+        // Mirror computeStatus's precedence. A disruption with no usable span
+        // is a line-level warning, already carried by `unmapped` — never a
+        // per-station blackout. This is the fail-visible rule.
+        const span = lineSpan(d, lineId);
+        let kind: StationStatusKind | null = null;
+        if (span) {
+          if (!stationInSection(station.id, d, lineId)) continue;
+          kind = reachableFromBeyond(station.id, span, lineId) ? "boundary" : "cut";
+        } else if (d.parsed && d.wholeLine) {
+          kind = "cut";
         }
+        if (!kind) continue;
+
+        if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
+        ids.add(d.id);
       }
 
-      perLine.push({ lineId, status });
+      perLine.push({ lineId, status, unmapped });
     }
 
-    const overall = perLine.reduce<StationStatusKind>(
-      (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
-      "normal"
-    );
+    // `no-service` only wins when every line is asleep. Otherwise the worst
+    // real fault among the running lines is what matters.
+    const running = perLine.filter((l) => l.status !== "no-service");
+    const overall: StationStatusKind = running.length
+      ? running.reduce<StationStatusKind>(
+          (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
+          "normal"
+        )
+      : "no-service";
 
     out.push({
       stationId: station.id,
       status: overall,
+      unmapped: perLine.some((l) => l.unmapped),
       disruptionIds: [...ids],
       lines: perLine,
     });
@@ -1042,12 +1178,16 @@ export function computeStationStatuses(
 }
 ```
 
-Add the imports at the top of `lib/status.ts`:
+Add the import at the top of `lib/status.ts`:
 
 ```ts
-import type { StationStatus, StationStatusKind } from "./types";
-import { RENDERED_STATIONS } from "./map/geometry";
+import type { StationLineStatus, StationStatus, StationStatusKind } from "./types";
 ```
+
+Note there is deliberately no `RENDERED_STATIONS` guard. The three City Loop
+orphans are absent from `lib/network/data.ts` entirely, so `STATIONS` never
+contains them and no filter is needed — adding one would couple domain logic to
+a generated map artifact for no live benefit.
 
 - [ ] **Step 5: Wire it into computeStatus**
 
