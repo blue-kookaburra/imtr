@@ -24,3 +24,12 @@ export const ORPHAN_STATIONS: ReadonlySet<string> = new Set(geometry.orphans as 
 export function pathD(pts: XY[]): string {
   return pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
 }
+
+export type LabelAnchor = "start" | "middle" | "end";
+export interface LabelPlacement {
+  dx: number;
+  dy: number;
+  anchor: LabelAnchor;
+}
+
+export const LABEL_PLACEMENT = geometry.labels as unknown as Record<string, LabelPlacement>;

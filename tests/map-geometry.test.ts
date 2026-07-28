@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
-import { MAP_W, MAP_H, EDGE_PATH, ORPHAN_STATIONS, SNAP_DISTANCE } from "@/lib/map/geometry";
+import {
+  MAP_W,
+  MAP_H,
+  EDGE_PATH,
+  ORPHAN_STATIONS,
+  SNAP_DISTANCE,
+  LABEL_PLACEMENT,
+  RENDERED_STATIONS,
+} from "@/lib/map/geometry";
 
 // Reaches beyond the 25px snap budget that have been looked at and accepted.
 // Each is a parallel-lane tick: the poster bundles these lines into lanes
@@ -74,5 +82,34 @@ describe("map geometry", () => {
   it("simplifies polylines without moving them far", () => {
     const total = Object.values(EDGE_PATH).reduce((n, p) => n + p.length, 0);
     expect(total).toBeLessThan(1600); // was ~2100 before simplification
+  });
+});
+
+describe("label placement", () => {
+  it("places a label for every rendered station", () => {
+    for (const id of RENDERED_STATIONS) {
+      expect(LABEL_PLACEMENT[id], `no label placement for ${id}`).toBeDefined();
+    }
+  });
+
+  it("keeps labels close to their station", () => {
+    for (const p of Object.values(LABEL_PLACEMENT)) {
+      expect(Math.hypot(p.dx, p.dy)).toBeLessThanOrEqual(30);
+    }
+  });
+
+  it("uses an anchor consistent with the offset direction", () => {
+    for (const [id, p] of Object.entries(LABEL_PLACEMENT)) {
+      if (p.dx > 4) expect(p.anchor, id).toBe("start");
+      else if (p.dx < -4) expect(p.anchor, id).toBe("end");
+      else expect(p.anchor, id).toBe("middle");
+    }
+  });
+
+  it("spreads labels around rather than stacking them all one way", () => {
+    const dirs = new Set(
+      Object.values(LABEL_PLACEMENT).map((p) => `${Math.sign(p.dx)},${Math.sign(p.dy)}`)
+    );
+    expect(dirs.size).toBeGreaterThanOrEqual(5);
   });
 });

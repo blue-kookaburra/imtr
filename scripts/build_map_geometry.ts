@@ -75,6 +75,102 @@ function snapEnds(pts: XY[], from: XY, to: XY): { pts: XY[]; reach: number } {
   return { pts: out, reach: Math.max(headReach, tailReach) };
 }
 
+type Anchor = "start" | "middle" | "end";
+interface LabelPlacement {
+  dx: number;
+  dy: number;
+  anchor: Anchor;
+}
+
+// Eight candidate directions at a fixed radius. Right and left first — a name
+// beside a dot reads better than one above or below it, so ties go sideways.
+const LABEL_R = 22;
+const CANDIDATES: XY[] = [
+  [1, 0],
+  [-1, 0],
+  [1, -0.7],
+  [-1, -0.7],
+  [1, 0.7],
+  [-1, 0.7],
+  [0, -1],
+  [0, 1],
+];
+
+function anchorFor(dx: number): Anchor {
+  if (dx > 4) return "start";
+  if (dx < -4) return "end";
+  return "middle";
+}
+
+// Score a candidate by how crowded it is: nearby stations and nearby polyline
+// points both push a label away. Lower is better.
+function crowding(at: XY, self: string, stations: Record<string, XY>, samples: XY[]): number {
+  let score = 0;
+  for (const [id, p] of Object.entries(stations)) {
+    if (id === self) continue;
+    const d = dist(at, p);
+    if (d < 90) score += (90 - d) / 90;
+  }
+  for (const p of samples) {
+    const d = dist(at, p);
+    if (d < 45) score += ((45 - d) / 45) * 0.6;
+  }
+  return score;
+}
+
+function placeLabels(
+  stations: Record<string, XY>,
+  edges: Record<string, XY[]>,
+  rendered: Set<string>
+): Record<string, LabelPlacement> {
+  // Sample every polyline so labels avoid sitting on top of track artwork.
+  const samples: XY[] = [];
+  for (const pts of Object.values(edges)) {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i];
+      const [bx, by] = pts[i + 1];
+      const steps = Math.max(1, Math.round(Math.hypot(bx - ax, by - ay) / 30));
+      for (let s = 0; s < steps; s++) {
+        samples.push([ax + ((bx - ax) * s) / steps, ay + ((by - ay) * s) / steps]);
+      }
+    }
+  }
+
+  const out: Record<string, LabelPlacement> = {};
+  // Place densest-neighbourhood stations first so crowded areas get first pick.
+  const order = [...rendered].sort((a, b) => {
+    const ca = crowding(stations[a], a, stations, []);
+    const cb = crowding(stations[b], b, stations, []);
+    return cb - ca;
+  });
+
+  const taken: XY[] = [];
+  for (const id of order) {
+    const origin = stations[id];
+    let best: LabelPlacement | null = null;
+    let bestScore = Infinity;
+    for (const [ux, uy] of CANDIDATES) {
+      const norm = Math.hypot(ux, uy);
+      const dx = (ux / norm) * LABEL_R;
+      const dy = (uy / norm) * LABEL_R;
+      const at: XY = [origin[0] + dx, origin[1] + dy];
+      let score = crowding(at, id, stations, samples);
+      // Penalise sitting on an already-placed label.
+      for (const t of taken) {
+        const d = dist(at, t);
+        if (d < 60) score += (60 - d) / 60;
+      }
+      if (score < bestScore) {
+        bestScore = score;
+        best = { dx: Math.round(dx), dy: Math.round(dy), anchor: anchorFor(dx) };
+      }
+    }
+    out[id] = best!;
+    taken.push([origin[0] + best!.dx, origin[1] + best!.dy]);
+  }
+  return out;
+}
+
 function build() {
   // The extractor anchors each station to its OCR'd label, which occasionally
   // lands off the artwork — or, for Footscray, exactly on top of another
@@ -114,12 +210,15 @@ function build() {
     .filter((id) => !rendered.has(id))
     .sort();
 
+  const labels = placeLabels(stations, edges, rendered);
+
   const out = {
     width: extracted.width,
     height: extracted.height,
     stations,
     edges,
     snapped,
+    labels,
     rendered: [...rendered].sort(),
     orphans,
   };
