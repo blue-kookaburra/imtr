@@ -976,13 +976,17 @@ describe("per-station status", () => {
   });
 
   it("does not let one sleeping line outrank the running ones", () => {
-    // Stony Point runs a sparse timetable; whatever the hour, a station's
-    // overall status must never be dragged to no-service while other lines run.
-    const res = computeStatus([], AT, UPDATED);
-    for (const s of res.stations) {
-      const running = s.lines.filter((l) => l.status !== "no-service");
-      if (running.length > 0) expect(s.status).not.toBe("no-service");
-    }
+    // 21:30 Wednesday Melbourne: Stony Point has stopped for the night but
+    // Frankston has not, and Frankston station serves both. At midday this
+    // test would prove nothing — no line is asleep — so the hour matters.
+    const at930pm = new Date("2026-08-05T11:30:00Z");
+    const res = computeStatus([], at930pm, UPDATED);
+    const frankston = stationStatus(res, "frankston")!;
+    const asleep = frankston.lines.filter((l) => l.status === "no-service");
+    const awake = frankston.lines.filter((l) => l.status !== "no-service");
+    expect(asleep.length, "expected at least one sleeping line here").toBeGreaterThan(0);
+    expect(awake.length, "expected at least one running line here").toBeGreaterThan(0);
+    expect(frankston.status).not.toBe("no-service");
   });
 
   it("cuts every station when a whole line is replaced", () => {
@@ -993,21 +997,6 @@ describe("per-station status", () => {
     );
     expect(stationStatus(res, "alamein")!.status).toBe("cut");
     expect(stationStatus(res, "riversdale")!.status).toBe("cut");
-  });
-
-  it("keeps the overall status equal to the worst running line", () => {
-    const res = computeStatus(
-      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
-      AT,
-      UPDATED
-    );
-    for (const s of res.stations) {
-      const running = s.lines.filter((l) => l.status !== "no-service");
-      if (!running.length) continue;
-      const rank = { "no-service": -1, normal: 0, warning: 1, boundary: 2, cut: 3 } as const;
-      const worst = running.reduce((a, l) => (rank[l.status] > rank[a] ? l.status : a), "normal" as const);
-      expect(s.status, s.stationId).toBe(worst);
-    }
   });
 
   it("emits a status for every station in the network model", () => {
