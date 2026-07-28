@@ -2008,15 +2008,88 @@ Expected: at the default zoom only interchanges, termini and disrupted stations 
 
 If a cluster looks bad, adjust `LABEL_R` or the `CANDIDATES` order in `scripts/build_map_geometry.ts` and rerun `npm run map:build` — do not hand-edit `data/map-geometry.json`, it is generated.
 
-- [ ] **Step 5: Run tests and lint**
+- [ ] **Step 5: Test that the always-shown labels don't collide**
+
+Task 3's review found its anchor-consistency test only restates `anchorFor`'s
+definition and cannot fail. This is the test that carries real weight, and it belongs
+here because a failure is actionable here: the always-shown set (interchanges and
+termini) is what a user sees at default zoom, so those labels must not overlap.
+
+Add `tests/map-labels.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+import { LINE_DEFS, STATIONS } from "@/lib/network/build";
+import { LABEL_PLACEMENT, RENDERED_STATIONS, STATION_XY } from "@/lib/map/geometry";
+
+// Estimated text box for a label. Overpass at these sizes averages a little
+// over half the font size per character; 0.55 is deliberately generous so the
+// test errs toward catching collisions rather than missing them.
+function box(id: string) {
+  const s = STATIONS.get(id)!;
+  const p = LABEL_PLACEMENT[id];
+  const xy = STATION_XY[id];
+  const size = s.interchange ? 15 : 13;
+  const w = s.name.length * size * 0.55;
+  const h = size * 1.2;
+  const x = xy[0] + p.dx;
+  const y = xy[1] + p.dy;
+  const left = p.anchor === "start" ? x : p.anchor === "end" ? x - w : x - w / 2;
+  const top = y - h / 2;
+  return { left, top, right: left + w, bottom: top + h, id };
+}
+
+function overlaps(a: ReturnType<typeof box>, b: ReturnType<typeof box>) {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+describe("always-shown labels", () => {
+  // Interchanges and termini are labelled at every zoom, so they are the set
+  // that must stay legible without the user zooming in.
+  const alwaysShown = [...RENDERED_STATIONS].filter((id) => {
+    const s = STATIONS.get(id)!;
+    if (s.interchange) return true;
+    return s.lines.some((l) => {
+      const line = LINE_DEFS.find((d) => d.id === l)!;
+      return line.stations[0] === id || line.stations[line.stations.length - 1] === id;
+    });
+  });
+
+  it("labels a sensible number of stations at default zoom", () => {
+    expect(alwaysShown.length).toBeGreaterThan(10);
+    expect(alwaysShown.length).toBeLessThan(90);
+  });
+
+  it("does not overlap any two of them", () => {
+    const boxes = alwaysShown.map(box);
+    const clashes: string[] = [];
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        if (overlaps(boxes[i], boxes[j])) clashes.push(`${boxes[i].id} / ${boxes[j].id}`);
+      }
+    }
+    expect(clashes).toEqual([]);
+  });
+});
+```
+
+Run: `npx vitest run tests/map-labels.test.ts`
+
+If clashes appear, fix them by adding a manual override block to
+`scripts/build_map_geometry.ts` — a `LABEL_OVERRIDES: Record<string, LabelPlacement>` applied
+after `placeLabels` — with an entry per clashing station, then rerun `npm run map:build`.
+Do NOT relax the test or shrink the estimated box to make it pass. Report the clash list
+either way so the plan owner can see how crowded the map actually is.
+
+- [ ] **Step 6: Run tests and lint**
 
 Run: `npm test && npm run lint`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add components/map/MapLabels.tsx components/NetworkMap.tsx app/globals.css
+git add components/map/MapLabels.tsx components/NetworkMap.tsx app/globals.css tests/map-labels.test.ts
 git commit -m "Draw station labels from precomputed placement
 
 Interchanges, termini and disrupted stations are always named; the rest fade in
