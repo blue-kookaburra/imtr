@@ -82,9 +82,7 @@ Create `tests/map-geometry.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
-import { MAP_W, MAP_H, STATION_XY, EDGE_PATH, ORPHAN_STATIONS } from "@/lib/map/geometry";
-
-const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+import { MAP_W, MAP_H, EDGE_PATH, ORPHAN_STATIONS, SNAP_DISTANCE } from "@/lib/map/geometry";
 
 describe("map geometry", () => {
   it("uses the extracted map's pixel space", () => {
@@ -99,21 +97,22 @@ describe("map geometry", () => {
     }
   });
 
-  it("lands every polyline endpoint on its station", () => {
-    const bad: string[] = [];
-    for (const e of EDGES) {
-      const pts = EDGE_PATH[e.id];
-      const A = STATION_XY[e.from];
-      const B = STATION_XY[e.to];
-      const fwd = dist(pts[0], A) + dist(pts[pts.length - 1], B);
-      const rev = dist(pts[0], B) + dist(pts[pts.length - 1], A);
-      const [d0, d1] =
-        fwd <= rev
-          ? [dist(pts[0], A), dist(pts[pts.length - 1], B)]
-          : [dist(pts[0], B), dist(pts[pts.length - 1], A)];
-      if (d0 > 25 || d1 > 25) bad.push(`${e.id} (${d0.toFixed(0)}, ${d1.toFixed(0)})`);
-    }
+  it("never has to drag a polyline far to reach its station", () => {
+    // The build snaps each polyline's ends onto its station, so asserting on
+    // the *output* endpoints would be vacuously true. Assert on how far the
+    // snap had to reach: a short reach is the parallel-lane tick the poster
+    // itself draws; a long one means the polyline was routed somewhere else
+    // entirely and the snap papered over it with a straight teleport.
+    const bad = Object.entries(SNAP_DISTANCE)
+      .filter(([, d]) => d > 25)
+      .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
     expect(bad).toEqual([]);
+  });
+
+  it("records a snap distance for every edge", () => {
+    for (const e of EDGES) {
+      expect(SNAP_DISTANCE[e.id], `no snap distance for ${e.id}`).toBeTypeOf("number");
+    }
   });
 
   it("pins the known orphan stations", () => {
@@ -209,19 +208,25 @@ function perpendicularDistance(p: XY, a: XY, b: XY): number {
 // The poster draws parallel lines side by side, so a line's lane often stops
 // short of the shared station dot. Appending the station coordinate draws the
 // same interchange tick the poster uses.
-function snapEnds(pts: XY[], from: XY, to: XY): XY[] {
+// Returns the snapped polyline and how far the snap had to reach — the reach
+// is the only evidence left afterwards that the polyline didn't already go
+// where it claimed, so it is recorded and asserted on.
+function snapEnds(pts: XY[], from: XY, to: XY): { pts: XY[]; reach: number } {
   const fwd = dist(pts[0], from) + dist(pts[pts.length - 1], to);
   const rev = dist(pts[0], to) + dist(pts[pts.length - 1], from);
   const [head, tail] = fwd <= rev ? [from, to] : [to, from];
   const out = pts.map((p) => [p[0], p[1]] as XY);
-  if (dist(out[0], head) > 2) out.unshift(head);
-  if (dist(out[out.length - 1], tail) > 2) out.push(tail);
-  return out;
+  const headReach = dist(out[0], head);
+  const tailReach = dist(out[out.length - 1], tail);
+  if (headReach > 2) out.unshift(head);
+  if (tailReach > 2) out.push(tail);
+  return { pts: out, reach: Math.max(headReach, tailReach) };
 }
 
 function build() {
   const stations = extracted.stations;
   const edges: Record<string, XY[]> = {};
+  const snapped: Record<string, number> = {};
   const rendered = new Set<string>();
   const missing: string[] = [];
 
@@ -239,7 +244,9 @@ function build() {
     }
     // Hand-authored polylines are authored to land on their stations already,
     // but snapping them is harmless and keeps one code path.
-    edges[e.id] = simplify(snapEnds(raw, from, to), 1.5);
+    const snap = snapEnds(raw, from, to);
+    edges[e.id] = simplify(snap.pts, 1.5);
+    snapped[e.id] = Number(snap.reach.toFixed(1));
     rendered.add(e.from);
     rendered.add(e.to);
   }
@@ -257,16 +264,24 @@ function build() {
     height: extracted.height,
     stations,
     edges,
+    snapped,
     rendered: [...rendered].sort(),
     orphans,
   };
   writeFileSync(join(ROOT, "data/map-geometry.json"), JSON.stringify(out) + "\n");
 
   const pointCount = Object.values(edges).reduce((n, p) => n + p.length, 0);
+  const farSnaps = Object.entries(snapped)
+    .filter(([, d]) => d > 25)
+    .sort((a, b) => b[1] - a[1]);
   console.log(
     `map-geometry.json: ${Object.keys(edges).length} edges, ${pointCount} points, ` +
       `${rendered.size} rendered stations, ${orphans.length} orphans (${orphans.join(", ")})`
   );
+  if (farSnaps.length) {
+    console.log(`  ${farSnaps.length} edge(s) snapped more than 25px — these need hand routing:`);
+    for (const [id, d] of farSnaps) console.log(`    ${id}  ${d}px`);
+  }
 }
 
 build();
@@ -286,6 +301,11 @@ export const MAP_W = geometry.width as number;
 export const MAP_H = geometry.height as number;
 export const STATION_XY = geometry.stations as unknown as Record<string, XY>;
 export const EDGE_PATH = geometry.edges as unknown as Record<string, XY[]>;
+
+// How far the build had to drag each polyline's ends to reach its stations.
+// Small = the parallel-lane tick the poster draws. Large = the polyline was
+// routed somewhere else and needs a hand-authored replacement.
+export const SNAP_DISTANCE = geometry.snapped as unknown as Record<string, number>;
 
 // Stations that belong to at least one edge, so can be drawn and given a status.
 export const RENDERED_STATIONS: ReadonlySet<string> = new Set(geometry.rendered as string[]);
@@ -318,7 +338,7 @@ The endpoint test will still fail for the 4 mis-routed edges — that is expecte
 - [ ] **Step 8: Run the tests**
 
 Run: `npx vitest run tests/map-geometry.test.ts`
-Expected: the pixel-space, polyline-exists, orphan and simplification tests PASS. The endpoint test FAILS listing exactly these four:
+Expected: the pixel-space, polyline-exists, orphan, snap-recorded and simplification tests PASS. The snap-reach test FAILS listing exactly these four:
 
 ```
 frankston:flinders-street-richmond
@@ -358,8 +378,8 @@ The only hand-drawing in the whole plan. Frankston and Sandringham both run Flin
 
 - [ ] **Step 1: Confirm the test still fails on exactly four edges**
 
-Run: `npx vitest run tests/map-geometry.test.ts -t "lands every polyline endpoint"`
-Expected: FAIL listing the four `frankston:` / `sandringham:` edges.
+Run: `npx vitest run tests/map-geometry.test.ts -t "never has to drag a polyline far"`
+Expected: FAIL listing the four `frankston:` / `sandringham:` edges with their snap distances (roughly 336px and 317px).
 
 - [ ] **Step 2: Write the hand polylines**
 
@@ -2155,8 +2175,9 @@ Under **Critical constraints**, add:
 ```markdown
 - **`data/map-geometry.json` is generated — never hand-edit it.** Fix geometry in
   `data/map-overrides.json` or the scoring in `scripts/build_map_geometry.ts`, then rerun
-  `npm run map:build`. `tests/map-geometry.test.ts` fails if any edge stops more than 25 px
-  from its station.
+  `npm run map:build`. `tests/map-geometry.test.ts` fails if the build had to drag any
+  polyline more than 25 px to reach its station — a long reach means the edge was routed
+  somewhere else entirely and needs a hand-authored polyline, not a snap.
 ```
 
 - [ ] **Step 5: Run everything**
