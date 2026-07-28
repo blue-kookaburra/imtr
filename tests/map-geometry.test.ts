@@ -2,6 +2,31 @@ import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
 import { MAP_W, MAP_H, EDGE_PATH, ORPHAN_STATIONS, SNAP_DISTANCE } from "@/lib/map/geometry";
 
+// Reaches beyond the 25px snap budget that have been looked at and accepted.
+// Each is a parallel-lane tick: the poster bundles these lines into lanes
+// running beside the shared station dot, so the snap draws exactly the short
+// connector the poster itself draws. Verified by rendering the CBD at 1:1.
+// Any edge NOT listed here must stay under 25px — a long reach elsewhere means
+// the polyline was routed somewhere else and the snap papered over it with a
+// straight teleport. Values are the measured reach; the test allows 2px of
+// drift so a tick cannot silently grow into a teleport.
+const ACCEPTED_LANE_TICKS: Record<string, number> = {
+  "belgrave:flinders-street-richmond": 42.8,
+  "lilydale:flinders-street-richmond": 42.8,
+  "alamein:flinders-street-richmond": 42.8,
+  "glen-waverley:flinders-street-richmond": 42.8,
+  "mernda:flinders-street-jolimont": 57.4,
+  "hurstbridge:flinders-street-jolimont": 57.4,
+  "craigieburn:flinders-street-southern-cross": 71.2,
+  "upfield:flinders-street-southern-cross": 71.2,
+  "craigieburn:southern-cross-north-melbourne": 71.2,
+  "upfield:southern-cross-north-melbourne": 71.2,
+  "werribee:southern-cross-north-melbourne": 49.1,
+  "williamstown:southern-cross-north-melbourne": 49.1,
+  "werribee:north-melbourne-south-kensington": 49.1,
+  "williamstown:north-melbourne-south-kensington": 49.1,
+};
+
 describe("map geometry", () => {
   it("uses the extracted map's pixel space", () => {
     expect(MAP_W).toBe(3572);
@@ -22,9 +47,16 @@ describe("map geometry", () => {
     // itself draws; a long one means the polyline was routed somewhere else
     // entirely and the snap papered over it with a straight teleport.
     const bad = Object.entries(SNAP_DISTANCE)
-      .filter(([, d]) => d > 25)
+      .filter(([id, d]) => d > (ACCEPTED_LANE_TICKS[id] ?? 0) + 2 && d > 25)
       .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
     expect(bad).toEqual([]);
+  });
+
+  it("has no stale entries in the accepted-lane-tick list", () => {
+    const stale = Object.keys(ACCEPTED_LANE_TICKS).filter(
+      (id) => (SNAP_DISTANCE[id] ?? 0) <= 25
+    );
+    expect(stale, "these edges no longer need an exemption — remove them").toEqual([]);
   });
 
   it("records a snap distance for every edge", () => {

@@ -21,6 +21,7 @@ const extracted = JSON.parse(readFileSync(join(ROOT, "data/map-stations.json"), 
   edges: Record<string, XY[]>;
 };
 const overrides = JSON.parse(readFileSync(join(ROOT, "data/map-overrides.json"), "utf-8")) as {
+  stations?: Record<string, XY>;
   edges: Record<string, XY[]>;
 };
 
@@ -75,7 +76,10 @@ function snapEnds(pts: XY[], from: XY, to: XY): { pts: XY[]; reach: number } {
 }
 
 function build() {
-  const stations = extracted.stations;
+  // The extractor anchors each station to its OCR'd label, which occasionally
+  // lands off the artwork — or, for Footscray, exactly on top of another
+  // station. Overrides correct those by hand.
+  const stations: Record<string, XY> = { ...extracted.stations, ...(overrides.stations ?? {}) };
   const edges: Record<string, XY[]> = {};
   const snapped: Record<string, number> = {};
   const rendered = new Set<string>();
