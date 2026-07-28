@@ -49,9 +49,13 @@ connect. All of them are in the CBD.
 | `belgrave` / `lilydale` / `alamein` / `glen-waverley` → `flinders-street` | 43 px |
 | `north-melbourne`, `seddon`, `canterbury` approaches | 27–49 px |
 
-Flagstaff, Melbourne Central, Parliament and Town Hall are present as coordinates but
-connect to no edge — the City Loop ring was never traced, because the poster draws it as
-four bundled parallel tracks that the router collapsed into stubs.
+Flagstaff, Melbourne Central and Parliament are present as coordinates but connect to no
+edge at all. This is not an extraction failure: the City Loop is simply not modelled in
+`lib/network/data.ts`, which covers the Metro Tunnel but no loop ring. The app can
+therefore compute no status for those three, and they are **not rendered**. Modelling the
+City Loop is separate work touching the network model, the scraper's station matching and
+the merge logic; it is out of scope here. A test pins the orphan set to exactly those
+three so a regression is caught.
 
 Today the printed map underneath draws the correct picture, so the gaps are invisible.
 Removing the raster exposes all of them. Repairing the CBD is therefore a hard
@@ -81,9 +85,20 @@ New file `data/map-overrides.json`, merged over the extracted data at build time
 }
 ```
 
-Hand-authored coordinates for the ~12 loop and Metro Tunnel stations, plus explicit
-polylines for the 27 dangling edges. Keeping overrides in a separate file means a future
-`extract_map.py` rerun against a new poster edition cannot clobber the hand work.
+Keeping overrides in a separate file means a future `extract_map.py` rerun against a new
+poster edition cannot clobber the hand work.
+
+Measurement during planning narrowed this considerably. 23 of the 27 dangling edges are
+**parallel-lane offsets** — the poster draws several lines side by side, so each line's
+lane stops short of the shared station dot. Appending the station coordinate to the
+polyline draws exactly the interchange tick the poster itself uses, and it is purely
+mechanical. Verified visually.
+
+Only 4 edges are genuinely mis-routed and need hand polylines:
+`frankston:flinders-street-richmond`, `frankston:richmond-south-yarra`,
+`sandringham:flinders-street-richmond` and `sandringham:richmond-south-yarra`, all of
+which bypass Richmond entirely (336 px and 317 px off) because the extractor routed them
+down the direct Caulfield corridor. **No station coordinates move.**
 
 A test asserts every edge's polyline endpoints land within 25 px of its `from` and `to`
 station coordinates, so the defect cannot silently return.
