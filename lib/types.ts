@@ -54,6 +54,19 @@ export interface SegmentStatus {
   disruptionIds: string[];
 }
 
+export type StationStatusKind =
+  | "normal" // trains as timetabled
+  | "boundary" // trains terminate here, buses beyond
+  | "cut" // inside the affected section, no trains
+  | "warning"; // a disruption touches this line but couldn't be parsed
+
+export interface StationStatus {
+  stationId: string;
+  status: StationStatusKind;
+  disruptionIds: string[];
+  lines: { lineId: LineId; status: StationStatusKind }[];
+}
+
 // Normalized disruption produced by the parser.
 export interface Disruption {
   id: string; // stable hash of source row
@@ -89,6 +102,7 @@ export interface StatusResponse {
   dataUpdatedAt: string; // when scrape cache was last refreshed
   stale: boolean;
   segments: SegmentStatus[];
+  stations: StationStatus[];
   lineWarnings: { lineId: LineId; disruptionIds: string[] }[];
   disruptions: Disruption[];
 }

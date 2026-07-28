@@ -3,11 +3,14 @@ import type {
   Disruption,
   LineId,
   SegmentStatus,
+  StationStatus,
+  StationStatusKind,
   StatusResponse,
 } from "./types";
 import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/build";
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
 import { melbourneLocalToIso, melbourneTimeLabel } from "./meltz";
+import { RENDERED_STATIONS } from "./map/geometry";
 
 // Does this disruption apply at the given Melbourne-local moment?
 function disruptionActiveAt(d: Disruption, t: MelTime, at: Date): boolean {
@@ -92,6 +95,7 @@ export function computeStatus(
     dataUpdatedAt,
     stale: staleMs > 3 * 24 * 3600 * 1000,
     segments: [...segmentMap.values()],
+    stations: computeStationStatuses(active, t, lineWarnings),
     lineWarnings: [...lineWarnings.entries()].map(([lineId, ids]) => ({
       lineId,
       disruptionIds: [...ids],
@@ -125,6 +129,81 @@ function stationInSection(stationId: string, d: Disruption, lineId: LineId): boo
   const lo = line.stations.indexOf(span.from);
   const hi = line.stations.indexOf(span.to);
   return i !== -1 && i >= lo && i <= hi;
+}
+
+// Strongest signal wins when several lines disagree at one station.
+const STATION_RANK: Record<StationStatusKind, number> = {
+  normal: 0,
+  warning: 1,
+  boundary: 2,
+  cut: 3,
+};
+
+// Per-station status at a moment. A station at the very edge of a section is
+// `boundary`, not `cut` — trains still reach it from the far side, which is
+// what people actually want to know.
+export function computeStationStatuses(
+  active: Disruption[],
+  t: MelTime,
+  lineWarnings: Map<LineId, Set<string>>
+): StationStatus[] {
+  const out: StationStatus[] = [];
+
+  for (const station of STATIONS.values()) {
+    // Orphan stations (the unmodelled City Loop) have no edges and no status.
+    if (!RENDERED_STATIONS.has(station.id)) continue;
+
+    const perLine: { lineId: LineId; status: StationStatusKind }[] = [];
+    const ids = new Set<string>();
+
+    for (const lineId of station.lines) {
+      let status: StationStatusKind = "normal";
+
+      const warned = lineWarnings.get(lineId);
+      if (warned && warned.size > 0) {
+        status = "warning";
+        for (const id of warned) ids.add(id);
+      }
+
+      if (isServiceRunning(lineId, t)) {
+        for (const d of active) {
+          if (!d.lineIds.includes(lineId)) continue;
+
+          const span = lineSpan(d, lineId);
+          // Mirror computeStatus's precedence exactly. A disruption with no
+          // usable span is a line-level warning, already applied above —
+          // never a per-station blackout. This is the fail-visible rule.
+          let kind: StationStatusKind | null = null;
+          if (span) {
+            if (!stationInSection(station.id, d, lineId)) continue;
+            kind = span.from === station.id || span.to === station.id ? "boundary" : "cut";
+          } else if (d.parsed && d.wholeLine) {
+            kind = "cut";
+          }
+          if (!kind) continue;
+
+          if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
+          ids.add(d.id);
+        }
+      }
+
+      perLine.push({ lineId, status });
+    }
+
+    const overall = perLine.reduce<StationStatusKind>(
+      (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
+      "normal"
+    );
+
+    out.push({
+      stationId: station.id,
+      status: overall,
+      disruptionIds: [...ids],
+      lines: perLine,
+    });
+  }
+
+  return out;
 }
 
 function minutesToLabel(min: number): string {
