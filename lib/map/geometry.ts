@@ -8,6 +8,11 @@ export const MAP_H = geometry.height as number;
 export const STATION_XY = geometry.stations as unknown as Record<string, XY>;
 export const EDGE_PATH = geometry.edges as unknown as Record<string, XY[]>;
 
+// How far the build had to drag each polyline's ends to reach its stations.
+// Small = the parallel-lane tick the poster draws. Large = the polyline was
+// routed somewhere else and needs a hand-authored replacement.
+export const SNAP_DISTANCE = geometry.snapped as unknown as Record<string, number>;
+
 // Stations that belong to at least one edge, so can be drawn and given a status.
 export const RENDERED_STATIONS: ReadonlySet<string> = new Set(geometry.rendered as string[]);
 

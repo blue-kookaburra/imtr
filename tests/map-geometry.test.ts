@@ -1,8 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
-import { MAP_W, MAP_H, STATION_XY, EDGE_PATH, ORPHAN_STATIONS } from "@/lib/map/geometry";
-
-const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+import { MAP_W, MAP_H, EDGE_PATH, ORPHAN_STATIONS, SNAP_DISTANCE } from "@/lib/map/geometry";
 
 describe("map geometry", () => {
   it("uses the extracted map's pixel space", () => {
@@ -17,21 +15,22 @@ describe("map geometry", () => {
     }
   });
 
-  it("lands every polyline endpoint on its station", () => {
-    const bad: string[] = [];
-    for (const e of EDGES) {
-      const pts = EDGE_PATH[e.id];
-      const A = STATION_XY[e.from];
-      const B = STATION_XY[e.to];
-      const fwd = dist(pts[0], A) + dist(pts[pts.length - 1], B);
-      const rev = dist(pts[0], B) + dist(pts[pts.length - 1], A);
-      const [d0, d1] =
-        fwd <= rev
-          ? [dist(pts[0], A), dist(pts[pts.length - 1], B)]
-          : [dist(pts[0], B), dist(pts[pts.length - 1], A)];
-      if (d0 > 25 || d1 > 25) bad.push(`${e.id} (${d0.toFixed(0)}, ${d1.toFixed(0)})`);
-    }
+  it("never has to drag a polyline far to reach its station", () => {
+    // The build snaps each polyline's ends onto its station, so asserting on
+    // the *output* endpoints would be vacuously true. Assert on how far the
+    // snap had to reach: a short reach is the parallel-lane tick the poster
+    // itself draws; a long one means the polyline was routed somewhere else
+    // entirely and the snap papered over it with a straight teleport.
+    const bad = Object.entries(SNAP_DISTANCE)
+      .filter(([, d]) => d > 25)
+      .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
     expect(bad).toEqual([]);
+  });
+
+  it("records a snap distance for every edge", () => {
+    for (const e of EDGES) {
+      expect(SNAP_DISTANCE[e.id], `no snap distance for ${e.id}`).toBeTypeOf("number");
+    }
   });
 
   it("pins the known orphan stations", () => {

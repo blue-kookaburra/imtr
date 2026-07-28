@@ -58,19 +58,26 @@ function perpendicularDistance(p: XY, a: XY, b: XY): number {
 // The poster draws parallel lines side by side, so a line's lane often stops
 // short of the shared station dot. Appending the station coordinate draws the
 // same interchange tick the poster uses.
-function snapEnds(pts: XY[], from: XY, to: XY): XY[] {
+//
+// Returns the snapped polyline and how far the snap had to reach — the reach
+// is the only evidence left afterwards that the polyline didn't already go
+// where it claimed, so it is recorded and asserted on.
+function snapEnds(pts: XY[], from: XY, to: XY): { pts: XY[]; reach: number } {
   const fwd = dist(pts[0], from) + dist(pts[pts.length - 1], to);
   const rev = dist(pts[0], to) + dist(pts[pts.length - 1], from);
   const [head, tail] = fwd <= rev ? [from, to] : [to, from];
   const out = pts.map((p) => [p[0], p[1]] as XY);
-  if (dist(out[0], head) > 2) out.unshift(head);
-  if (dist(out[out.length - 1], tail) > 2) out.push(tail);
-  return out;
+  const headReach = dist(out[0], head);
+  const tailReach = dist(out[out.length - 1], tail);
+  if (headReach > 2) out.unshift(head);
+  if (tailReach > 2) out.push(tail);
+  return { pts: out, reach: Math.max(headReach, tailReach) };
 }
 
 function build() {
   const stations = extracted.stations;
   const edges: Record<string, XY[]> = {};
+  const snapped: Record<string, number> = {};
   const rendered = new Set<string>();
   const missing: string[] = [];
 
@@ -88,7 +95,9 @@ function build() {
     }
     // Hand-authored polylines are authored to land on their stations already,
     // but snapping them is harmless and keeps one code path.
-    edges[e.id] = simplify(snapEnds(raw, from, to), 1.5);
+    const snap = snapEnds(raw, from, to);
+    edges[e.id] = simplify(snap.pts, 1.5);
+    snapped[e.id] = Number(snap.reach.toFixed(1));
     rendered.add(e.from);
     rendered.add(e.to);
   }
@@ -106,6 +115,7 @@ function build() {
     height: extracted.height,
     stations,
     edges,
+    snapped,
     rendered: [...rendered].sort(),
     orphans,
   };
@@ -116,6 +126,14 @@ function build() {
     `map-geometry.json: ${Object.keys(edges).length} edges, ${pointCount} points, ` +
       `${rendered.size} rendered stations, ${orphans.length} orphans (${orphans.join(", ")})`
   );
+
+  const farSnaps = Object.entries(snapped)
+    .filter(([, d]) => d > 25)
+    .sort((a, b) => b[1] - a[1]);
+  if (farSnaps.length) {
+    console.log(`  ${farSnaps.length} edge(s) snapped more than 25px — these need hand routing:`);
+    for (const [id, d] of farSnaps) console.log(`    ${id}  ${d}px`);
+  }
 }
 
 build();
