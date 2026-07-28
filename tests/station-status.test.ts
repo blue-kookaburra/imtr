@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { computeStatus } from "@/lib/status";
-import type { Disruption } from "@/lib/types";
+import { STATIONS } from "@/lib/network/build";
+import type { Disruption, StationStatusKind } from "@/lib/types";
 
 // A Wednesday midday in Melbourne — every line is inside timetabled hours,
 // so nothing is no-service and disruptions are free to show.
@@ -105,10 +106,101 @@ describe("per-station status", () => {
     expect(sy.lines.find((l) => l.lineId === "sandringham")!.status).toBe("cut");
   });
 
-  it("emits a status for every rendered station and no orphans", () => {
+  it("cuts a section end that is also the line terminus", () => {
+    // Buses between Ringwood and Belgrave. Belgrave is the end of the line, so
+    // there is no far side for a train to arrive from — every service to it is
+    // replaced. Calling that "trains terminate here" would be a false all-clear.
+    const res = computeStatus(
+      [
+        disruption({
+          lineIds: ["belgrave"],
+          stations: ["ringwood", "belgrave"],
+          fromStation: "ringwood",
+          toStation: "belgrave",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "belgrave")!.status).toBe("cut");
+    // Ringwood does have a far side, so it really is a terminating point.
+    expect(stationStatus(res, "ringwood")!.status).toBe("boundary");
+  });
+
+  it("keeps an unmapped disruption visible even when a confident state outranks it", () => {
+    const res = computeStatus(
+      [
+        disruption({ id: "d1", parsed: false, wholeLine: false, stations: undefined }),
+        disruption({
+          id: "d2",
+          stations: ["caulfield", "carrum"],
+          fromStation: "caulfield",
+          toStation: "carrum",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    const carrum = stationStatus(res, "carrum")!;
+    expect(carrum.status).toBe("boundary");
+    // The parser failed to understand something else on this line. That must
+    // survive alongside the confident state, not be masked by it.
+    expect(carrum.unmapped).toBe(true);
+    expect(carrum.lines.find((l) => l.lineId === "frankston")!.unmapped).toBe(true);
+  });
+
+  it("reports no-service outside timetabled hours rather than normal", () => {
+    // 3am Melbourne on a Wednesday — nothing is timetabled.
+    const at3am = new Date("2026-08-04T17:00:00Z");
+    const res = computeStatus([], at3am, UPDATED);
+    const sy = stationStatus(res, "south-yarra")!;
+    expect(sy.status).toBe("no-service");
+    expect(sy.lines.every((l) => l.status === "no-service")).toBe(true);
+  });
+
+  it("does not let one sleeping line outrank the running ones", () => {
+    // Stony Point runs a sparse timetable; whatever the hour, a station's
+    // overall status must never be dragged to no-service while other lines run.
     const res = computeStatus([], AT, UPDATED);
+    for (const s of res.stations) {
+      const running = s.lines.filter((l) => l.status !== "no-service");
+      if (running.length > 0) expect(s.status).not.toBe("no-service");
+    }
+  });
+
+  it("cuts every station when a whole line is replaced", () => {
+    const res = computeStatus(
+      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "alamein")!.status).toBe("cut");
+    expect(stationStatus(res, "riversdale")!.status).toBe("cut");
+  });
+
+  it("keeps the overall status equal to the worst running line", () => {
+    const res = computeStatus(
+      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
+      AT,
+      UPDATED
+    );
+    for (const s of res.stations) {
+      const running = s.lines.filter((l) => l.status !== "no-service");
+      if (!running.length) continue;
+      const rank = { "no-service": -1, normal: 0, warning: 1, boundary: 2, cut: 3 } as const;
+      const worst = running.reduce((a, l) => (rank[l.status] > rank[a] ? l.status : a), "normal" as StationStatusKind);
+      expect(s.status, s.stationId).toBe(worst);
+    }
+  });
+
+  it("emits a status for every station in the network model", () => {
+    const res = computeStatus([], AT, UPDATED);
+    expect(res.stations.length).toBe(STATIONS.size);
+    for (const s of res.stations) expect(s.lines.length).toBeGreaterThan(0);
+    // The City Loop is not modelled at all, so these never appear.
     const ids = new Set(res.stations.map((s) => s.stationId));
-    expect(ids.has("flagstaff")).toBe(false);
-    expect(ids.has("richmond")).toBe(true);
+    for (const orphan of ["flagstaff", "melbourne-central", "parliament"]) {
+      expect(ids.has(orphan), orphan).toBe(false);
+    }
   });
 });

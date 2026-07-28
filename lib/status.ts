@@ -3,6 +3,7 @@ import type {
   Disruption,
   LineId,
   SegmentStatus,
+  StationLineStatus,
   StationStatus,
   StationStatusKind,
   StatusResponse,
@@ -10,7 +11,6 @@ import type {
 import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/build";
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
 import { melbourneLocalToIso, melbourneTimeLabel } from "./meltz";
-import { RENDERED_STATIONS } from "./map/geometry";
 
 // Does this disruption apply at the given Melbourne-local moment?
 function disruptionActiveAt(d: Disruption, t: MelTime, at: Date): boolean {
@@ -132,12 +132,34 @@ function stationInSection(stationId: string, d: Disruption, lineId: LineId): boo
 }
 
 // Strongest signal wins when several lines disagree at one station.
+// `no-service` ranks below everything and is filtered out before this is used,
+// so a single sleeping line can never outrank eleven running ones.
 const STATION_RANK: Record<StationStatusKind, number> = {
+  "no-service": -1,
   normal: 0,
   warning: 1,
   boundary: 2,
   cut: 3,
 };
+
+// Is this station at an end of the affected section that trains can still
+// reach from the far side? An end that is also the line's terminus has no far
+// side — every service to it is replaced — so it is `cut`, not `boundary`.
+// Reporting "trains terminate here" at Belgrave during a Ringwood–Belgrave
+// shutdown would be a false all-clear, which is exactly what fail-visible
+// exists to prevent.
+function reachableFromBeyond(
+  stationId: string,
+  span: { from: string; to: string },
+  lineId: LineId
+): boolean {
+  const line = LINE_DEFS.find((l) => l.id === lineId);
+  if (!line) return false;
+  const i = line.stations.indexOf(stationId);
+  if (stationId === span.from) return i > 0;
+  if (stationId === span.to) return i < line.stations.length - 1;
+  return false;
+}
 
 // Per-station status at a moment. A station at the very edge of a section is
 // `boundary`, not `cut` — trains still reach it from the far side, which is
@@ -150,54 +172,60 @@ export function computeStationStatuses(
   const out: StationStatus[] = [];
 
   for (const station of STATIONS.values()) {
-    // Orphan stations (the unmodelled City Loop) have no edges and no status.
-    if (!RENDERED_STATIONS.has(station.id)) continue;
-
-    const perLine: { lineId: LineId; status: StationStatusKind }[] = [];
+    const perLine: StationLineStatus[] = [];
     const ids = new Set<string>();
 
     for (const lineId of station.lines) {
-      let status: StationStatusKind = "normal";
-
       const warned = lineWarnings.get(lineId);
-      if (warned && warned.size > 0) {
-        status = "warning";
-        for (const id of warned) ids.add(id);
+      const unmapped = warned !== undefined && warned.size > 0;
+      if (warned) for (const id of warned) ids.add(id);
+
+      // Outside timetabled hours there is nothing to disrupt. Say that plainly
+      // instead of reporting "normal", which a reader takes as "trains running".
+      if (!isServiceRunning(lineId, t)) {
+        perLine.push({ lineId, status: "no-service", unmapped });
+        continue;
       }
 
-      if (isServiceRunning(lineId, t)) {
-        for (const d of active) {
-          if (!d.lineIds.includes(lineId)) continue;
+      let status: StationStatusKind = unmapped ? "warning" : "normal";
 
-          const span = lineSpan(d, lineId);
-          // Mirror computeStatus's precedence exactly. A disruption with no
-          // usable span is a line-level warning, already applied above —
-          // never a per-station blackout. This is the fail-visible rule.
-          let kind: StationStatusKind | null = null;
-          if (span) {
-            if (!stationInSection(station.id, d, lineId)) continue;
-            kind = span.from === station.id || span.to === station.id ? "boundary" : "cut";
-          } else if (d.parsed && d.wholeLine) {
-            kind = "cut";
-          }
-          if (!kind) continue;
+      for (const d of active) {
+        if (!d.lineIds.includes(lineId)) continue;
 
-          if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
-          ids.add(d.id);
+        // Mirror computeStatus's precedence. A disruption with no usable span
+        // is a line-level warning, already carried by `unmapped` — never a
+        // per-station blackout. This is the fail-visible rule.
+        const span = lineSpan(d, lineId);
+        let kind: StationStatusKind | null = null;
+        if (span) {
+          if (!stationInSection(station.id, d, lineId)) continue;
+          kind = reachableFromBeyond(station.id, span, lineId) ? "boundary" : "cut";
+        } else if (d.parsed && d.wholeLine) {
+          kind = "cut";
         }
+        if (!kind) continue;
+
+        if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
+        ids.add(d.id);
       }
 
-      perLine.push({ lineId, status });
+      perLine.push({ lineId, status, unmapped });
     }
 
-    const overall = perLine.reduce<StationStatusKind>(
-      (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
-      "normal"
-    );
+    // `no-service` only wins when every line is asleep. Otherwise the worst
+    // real fault among the running lines is what matters.
+    const running = perLine.filter((l) => l.status !== "no-service");
+    const overall: StationStatusKind = running.length
+      ? running.reduce<StationStatusKind>(
+          (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
+          "normal"
+        )
+      : "no-service";
 
     out.push({
       stationId: station.id,
       status: overall,
+      unmapped: perLine.some((l) => l.unmapped),
       disruptionIds: [...ids],
       lines: perLine,
     });

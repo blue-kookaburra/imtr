@@ -56,15 +56,31 @@ export interface SegmentStatus {
 
 export type StationStatusKind =
   | "normal" // trains as timetabled
-  | "boundary" // trains terminate here, buses beyond
-  | "cut" // inside the affected section, no trains
-  | "warning"; // a disruption touches this line but couldn't be parsed
+  | "no-service" // outside timetabled hours — not a fault
+  | "warning" // a disruption touches this line but couldn't be parsed
+  | "boundary" // trains still reach here from the far side, buses beyond
+  | "cut"; // no trains reach here at all
+
+export interface StationLineStatus {
+  lineId: LineId;
+  status: StationStatusKind;
+  // True when a disruption touches this line that the parser could not map to
+  // a section. Deliberately separate from `status` so a confident boundary or
+  // cut can never hide the fact that something else is unaccounted for — the
+  // fail-visible rule applies per line, not just to the strongest signal.
+  unmapped: boolean;
+}
 
 export interface StationStatus {
   stationId: string;
+  // The worst state across every line this station serves — NOT a statement
+  // about the station as a whole. At an interchange like Flinders Street one
+  // closed line makes this `cut` while eleven others run normally, so UI that
+  // wants "is my line running" must read `lines`, not this.
   status: StationStatusKind;
+  unmapped: boolean; // any line has an unmapped disruption
   disruptionIds: string[];
-  lines: { lineId: LineId; status: StationStatusKind }[];
+  lines: StationLineStatus[];
 }
 
 // Normalized disruption produced by the parser.
