@@ -24,7 +24,7 @@ export default function MapStations({ statusByStation, focusedLine, onSelectStat
         const ghosted = focusedLine !== null && !s.lines.includes(focusedLine);
         const r = s.interchange ? 8 : 6;
         return (
-          <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200">
+          <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200 motion-reduce:transition-none">
             <circle
               cx={xy[0]}
               cy={xy[1]}

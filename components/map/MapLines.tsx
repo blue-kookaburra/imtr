@@ -31,7 +31,7 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
             strokeOpacity={ghosted ? 0.25 : 1}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="transition-[stroke-width,stroke-opacity] duration-200"
+            className="transition-[stroke-width,stroke-opacity] duration-200 motion-reduce:transition-none"
           />
         );
       })}
