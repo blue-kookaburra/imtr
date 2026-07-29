@@ -44,14 +44,14 @@ export default function MapScreen() {
 
   const selDisruptions =
     sel && status ? status.disruptions.filter((d) => sel.status.disruptionIds.includes(d.id)) : [];
-  const selLine = sel ? LINE_BY_ID.get(sel.edge.lineId) : null;
+  const selLine = sel?.kind === "edge" ? LINE_BY_ID.get(sel.edge.lineId) : null;
 
   return (
     <div className="flex h-full flex-col">
       <TimeBar at={at} onChange={setAt} updatedAt={status?.dataUpdatedAt} stale={status?.stale} />
 
       <div className="relative min-h-0 flex-1">
-        <NetworkMap status={status} onSelect={setSel} />
+        <NetworkMap status={status} focusedLine={null} onSelect={setSel} />
 
         {!status && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
@@ -104,7 +104,7 @@ export default function MapScreen() {
       </div>
 
       <BottomSheet open={!!sel} onClose={() => setSel(null)}>
-        {sel && selLine && (
+        {sel?.kind === "edge" && selLine && (
           <div>
             <div className="flex items-center gap-2.5">
               <span className="h-3 w-3 rounded-full" style={{ background: selLine.color }} aria-hidden />
