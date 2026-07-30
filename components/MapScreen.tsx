@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import type { StatusResponse } from "@/lib/types";
+import type { LineId, StatusResponse } from "@/lib/types";
 import { LINE_BY_ID, STATIONS } from "@/lib/network/build";
 import NetworkMap, { type Selection } from "./NetworkMap";
+import LineChip from "./map/LineChip";
 import TimeBar from "./TimeBar";
 import BottomSheet from "./BottomSheet";
 import DisruptionCard from "./DisruptionCard";
@@ -17,11 +18,27 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
 };
 
 export default function MapScreen() {
-  const initialAt = useSearchParams().get("at");
+  const searchParams = useSearchParams();
+  const initialAt = searchParams.get("at");
+  const initialLine = searchParams.get("line");
   const [at, setAt] = useState<string | null>(initialAt); // datetime-local, null = now
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [error, setError] = useState(false);
   const [sel, setSel] = useState<Selection | null>(null);
+  // ?line= wins; otherwise restore the last focused line from localStorage.
+  // Safe to read localStorage in the initializer: useSearchParams() above bails
+  // this component out to client-side rendering, so it never runs on the server.
+  const [focusedLine, setFocusedLine] = useState<LineId | null>(() => {
+    if (initialLine) return LINE_BY_ID.has(initialLine as LineId) ? (initialLine as LineId) : null;
+    if (typeof window === "undefined") return null;
+    const saved = localStorage.getItem("imtr:line");
+    return saved && LINE_BY_ID.has(saved as LineId) ? (saved as LineId) : null;
+  });
+
+  useEffect(() => {
+    if (focusedLine) localStorage.setItem("imtr:line", focusedLine);
+    else localStorage.removeItem("imtr:line");
+  }, [focusedLine]);
 
   const load = useCallback(async () => {
     try {
@@ -51,7 +68,11 @@ export default function MapScreen() {
       <TimeBar at={at} onChange={setAt} updatedAt={status?.dataUpdatedAt} stale={status?.stale} />
 
       <div className="relative min-h-0 flex-1">
-        <NetworkMap status={status} focusedLine={null} onSelect={setSel} />
+        <NetworkMap status={status} focusedLine={focusedLine} onSelect={setSel} />
+
+        <div className="pointer-events-none absolute left-3 top-3">
+          <LineChip value={focusedLine} onChange={setFocusedLine} />
+        </div>
 
         {!status && !error && (
           <div className="absolute inset-0 flex items-center justify-center">
