@@ -1877,7 +1877,17 @@ In `components/map/MapLines.tsx`, replace the first `EDGES.map` block with:
 In `components/map/MapStations.tsx`, replace the visible `<circle>` with a status-aware mark:
 
 ```tsx
-        const st = statusByStation.get(s.id)?.status ?? "normal";
+        // `status` is the worst state across ALL lines, so one closed line would
+        // make Flinders Street look cut while eleven others run. Prefer the
+        // focused line's own view when there is one. focusedLine is null until
+        // Task 6 wires the picker, so this falls back to worst-line today —
+        // which errs toward showing a problem rather than hiding one.
+        const ss = statusByStation.get(s.id);
+        const focusedEntry = focusedLine ? ss?.lines.find((l) => l.lineId === focusedLine) : undefined;
+        const st = focusedEntry?.status ?? ss?.status ?? "normal";
+        // Deliberately independent of `st`: a confident cut must never hide the
+        // fact that another disruption on this line could not be mapped.
+        const unmapped = focusedEntry?.unmapped ?? ss?.unmapped ?? false;
         const r = s.interchange ? 8 : 6;
         return (
           <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200">
@@ -1891,7 +1901,7 @@ In `components/map/MapStations.tsx`, replace the visible `<circle>` with a statu
                 className="station-cut"
               />
             )}
-            {st === "warning" && (
+            {(st === "warning" || unmapped) && (
               <circle
                 cx={xy[0]}
                 cy={xy[1]}
@@ -1913,7 +1923,9 @@ In `components/map/MapStations.tsx`, replace the visible `<circle>` with a statu
                     ? "var(--warn)"
                     : "var(--map-station-fill)"
               }
-              stroke="var(--map-station-stroke)"
+              // no-service is not a fault — outside timetabled hours the whole
+              // map is in this state, so it must read as asleep, never broken.
+              stroke={st === "no-service" ? "var(--ink-faint)" : "var(--map-station-stroke)"}
               strokeWidth={s.interchange ? 4 : 3}
             />
             {/* boundary: trains reach this side only, so fill just half. */}
@@ -1978,7 +1990,12 @@ In `app/globals.css`, replace the existing `.seg-out` block with:
 
 - [ ] **Step 4: Update the legend**
 
-In `components/MapScreen.tsx`, the legend still describes the old rendering. Replace the three legend spans with:
+The legend currently advertises "Running / Buses / No service" while nothing draws them — it
+is actively wrong. Whatever you write must describe exactly what `MapLines` and `MapStations`
+really draw after this task and no more. If all five station states will not fit, cover the
+ones a user needs and leave the rest to the detail sheet.
+
+In `components/MapScreen.tsx`, replace the three legend spans with:
 
 ```tsx
             <span className="flex items-center gap-1.5">
@@ -2060,7 +2077,15 @@ export default function MapLabels({ statusByStation, focusedLine, zoom }: Props)
 
         const onFocusedLine = focusedLine !== null && s.lines.includes(focusedLine);
         const isTerminus = s.lines.some((l) => isLineEnd(s.id, l));
-        const disrupted = (statusByStation.get(s.id)?.status ?? "normal") !== "normal";
+        // Must NOT include no-service: at 3am every line is asleep, and
+        // treating that as "disrupted" would force all 222 labels on at once.
+        const sst = statusByStation.get(s.id);
+        const disrupted =
+          sst !== undefined &&
+          (sst.status === "warning" ||
+            sst.status === "boundary" ||
+            sst.status === "cut" ||
+            sst.unmapped);
 
         // Always: disrupted stations, interchanges, termini. With a line
         // focused, also that line's stations. Everything else waits for zoom.
