@@ -20,19 +20,80 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
         if (!pts) return null;
         const line = LINE_BY_ID.get(e.lineId);
         if (!line) return null;
+        const d = pathD(pts);
+        const st = statusByEdge.get(e.id)?.status ?? "running";
         const ghosted = focusedLine !== null && focusedLine !== e.lineId;
+        const w = ghosted ? 3 : STROKE;
+        const o = ghosted ? 0.25 : 1;
+
+        // bus-replacement: the stroke severs. A dashed bus path bridges the gap
+        // and the line's own colour is kept, so the break reads as this line
+        // failing rather than a patch laid over it.
+        if (st === "bus-replacement") {
+          return (
+            <g key={e.id} fill="none" strokeOpacity={o}>
+              <path
+                d={d}
+                stroke={line.color}
+                strokeWidth={w}
+                strokeOpacity={0.28}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d={d}
+                className="seg-out"
+                stroke={line.color}
+                strokeWidth={w}
+                strokeDasharray="18 22"
+                strokeLinecap="butt"
+                strokeLinejoin="round"
+              />
+            </g>
+          );
+        }
+
+        // no-service: a thin dotted ghost in the line's own hue. Not a fault —
+        // just nothing timetabled right now.
+        if (st === "no-service") {
+          return (
+            <path
+              key={e.id}
+              d={d}
+              fill="none"
+              stroke={line.color}
+              strokeWidth={Math.max(2, w * 0.35)}
+              strokeOpacity={o * 0.45}
+              strokeDasharray="2 14"
+              strokeLinecap="round"
+            />
+          );
+        }
+
+        // warning: full colour plus a halo. Never a blackout, never an
+        // all-clear — the fail-visible rule.
         return (
-          <path
-            key={e.id}
-            d={pathD(pts)}
-            fill="none"
-            stroke={line.color}
-            strokeWidth={ghosted ? 3 : STROKE}
-            strokeOpacity={ghosted ? 0.25 : 1}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="transition-[stroke-width,stroke-opacity] duration-200 motion-reduce:transition-none"
-          />
+          <g key={e.id} fill="none">
+            {st === "warning" && (
+              <path
+                d={d}
+                stroke="var(--warn)"
+                strokeWidth={w + 10}
+                strokeOpacity={o * 0.3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            <path
+              d={d}
+              stroke={line.color}
+              strokeWidth={w}
+              strokeOpacity={o}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="transition-[stroke-width,stroke-opacity] duration-200 motion-reduce:transition-none"
+            />
+          </g>
         );
       })}
 

@@ -71,19 +71,21 @@ export default function MapScreen() {
           </div>
         )}
 
-        {/* Legend */}
+        {/* Legend. Running lines keep each line's own colour (never a generic
+            "ok" green) and no-service is a deliberately unalarming dimmed dot,
+            so neither earns a legend swatch here — only the three states that
+            actually need decoding do. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
           <div className="flex items-center gap-3 rounded-full border border-hairline bg-elevated/90 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-dim backdrop-blur">
             <span className="flex items-center gap-1.5">
-              <span className="h-1 w-4 rounded-full bg-ok" /> Running
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-1 w-4 rounded-full bg-bad [background-image:repeating-linear-gradient(90deg,transparent,transparent_3px,var(--bg)_3px,var(--bg)_5px)]" />{" "}
+              <span className="h-1 w-4 rounded-full bg-ink-dim [background-image:repeating-linear-gradient(90deg,transparent,transparent_3px,var(--bg-elevated)_3px,var(--bg-elevated)_5px)]" />{" "}
               Buses
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-1 w-4 rounded-full bg-[var(--blackout)] ring-1 ring-hairline" /> No
-              service
+              <span className="h-2 w-2 rounded-full bg-warn ring-1 ring-hairline" /> Terminates
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-bad" /> Closed
             </span>
           </div>
         </div>

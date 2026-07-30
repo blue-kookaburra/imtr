@@ -60,17 +60,37 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Blacked-out segment: marching hazard dashes */
+/* Severed segment: the gap marches along the line. */
 @keyframes march {
   to {
-    stroke-dashoffset: -14;
+    stroke-dashoffset: -40;
   }
 }
 .seg-out {
-  animation: march 1.6s linear infinite;
+  animation: march 1.8s linear infinite;
 }
+
+/* Cut station: a slow breathing halo. */
+@keyframes station-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.15);
+  }
+}
+.station-cut {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: station-pulse 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .seg-out {
+  .seg-out,
+  .station-cut {
     animation: none;
   }
 }
