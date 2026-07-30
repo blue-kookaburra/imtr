@@ -10,7 +10,7 @@ import type { Disruption, LineId, StationStatus, StationStatusKind } from "@/lib
 // cut can really be nearer a boundary, so the copy stays hedged.
 const LABEL: Record<StationStatusKind, { text: string; cls: string }> = {
   normal: { text: "Trains running", cls: "text-ok" },
-  "no-service": { text: "No timetabled service now", cls: "text-ink-dim" },
+  "no-service": { text: "No trains at this time", cls: "text-ink-dim" },
   boundary: { text: "Trains terminate here", cls: "text-warn" },
   cut: { text: "Buses replace trains", cls: "text-bad" },
   warning: { text: "Check before you travel", cls: "text-warn" },
@@ -65,7 +65,11 @@ export default function StationSheet({ stationId, status, disruptions, focusedLi
               <span className={`text-xs font-bold ${LABEL[l.status].cls}`}>
                 {/* Per-line fail-visible marker, independent of the status. */}
                 {l.unmapped && (
-                  <span className="text-warn" title="A disruption on this line couldn't be mapped">
+                  <span
+                    className="text-warn"
+                    role="img"
+                    aria-label="A disruption on this line couldn't be mapped"
+                  >
                     ⚠{" "}
                   </span>
                 )}
