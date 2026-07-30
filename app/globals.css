@@ -27,21 +27,18 @@
   --map-station-fill: #ffffff;
   --map-station-stroke: #1f2430;
   --map-label: #1f2430;
-  --map-glow: 0;
 }
 .map-theme-dusk {
   --map-canvas: #d9d3ce;
   --map-station-fill: #fdfbf6;
   --map-station-stroke: #2b2f3a;
   --map-label: #2b2f3a;
-  --map-glow: 0.4;
 }
 .map-theme-night {
   --map-canvas: #12151c;
   --map-station-fill: #12151c;
   --map-station-stroke: #e8e4dc;
   --map-label: #e8e4dc;
-  --map-glow: 1;
 }
 
 @theme inline {
@@ -141,9 +138,7 @@ body {
 
 .map-canvas {
   background: var(--map-canvas);
-  transition:
-    background-color 600ms ease,
-    color 600ms ease;
+  transition: background-color 600ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

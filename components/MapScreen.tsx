@@ -38,10 +38,14 @@ export default function MapScreen() {
     return saved && LINE_BY_ID.has(saved as LineId) ? (saved as LineId) : null;
   });
 
-  // With at === null this reads the current time once per render; the
-  // five-minute refresh interval below re-renders MapScreen, so the theme
-  // rolls over on its own without a second timer.
-  const theme = useMemo(() => mapThemeFor(at ? new Date(at) : new Date()), [at]);
+  // With at === null the theme follows the instant the displayed status was
+  // computed for (status.at), so each five-minute refresh rolls it over —
+  // no second timer, and theme and map can never disagree about the time
+  // being shown. A bare new Date() memoized on [at] would freeze at mount.
+  const theme = useMemo(
+    () => mapThemeFor(at ? new Date(at) : status ? new Date(status.at) : new Date()),
+    [at, status]
+  );
 
   useEffect(() => {
     if (focusedLine) localStorage.setItem("imtr:line", focusedLine);
