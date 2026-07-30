@@ -9,6 +9,7 @@ import LineChip from "./map/LineChip";
 import TimeBar from "./TimeBar";
 import BottomSheet from "./BottomSheet";
 import DisruptionCard from "./DisruptionCard";
+import StationSheet from "./map/StationSheet";
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   running: { label: "Running", cls: "text-ok" },
@@ -128,6 +129,14 @@ export default function MapScreen() {
       </div>
 
       <BottomSheet open={!!sel} onClose={() => setSel(null)}>
+        {sel?.kind === "station" && (
+          <StationSheet
+            stationId={sel.stationId}
+            status={sel.status}
+            disruptions={selDisruptions}
+            focusedLine={focusedLine}
+          />
+        )}
         {sel?.kind === "edge" && selLine && (
           <div>
             <div className="flex items-center gap-2.5">
