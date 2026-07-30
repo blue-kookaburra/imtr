@@ -34,13 +34,17 @@ export default function MapLabels({ statusByStation, focusedLine, zoom }: Props)
         const isTerminus = s.lines.some((l) => isLineEnd(s.id, l));
         // Must NOT include no-service: at 3am every line is asleep, and
         // treating that as "disrupted" would force all 222 labels on at once.
+        // Prefer the focused line's own reading over worst-of-all-lines, the
+        // same way MapStations and StationSheet do, so a focused-line user
+        // never sees a red label over a dot their own line renders normal.
         const sst = statusByStation.get(s.id);
+        const focusedEntry = focusedLine
+          ? sst?.lines.find((l) => l.lineId === focusedLine)
+          : undefined;
+        const st = focusedEntry?.status ?? sst?.status;
+        const unmapped = focusedEntry?.unmapped ?? sst?.unmapped ?? false;
         const disrupted =
-          sst !== undefined &&
-          (sst.status === "warning" ||
-            sst.status === "boundary" ||
-            sst.status === "cut" ||
-            sst.unmapped);
+          st === "warning" || st === "boundary" || st === "cut" || unmapped;
 
         // Always: disrupted stations, interchanges, termini. With a line
         // focused, also that line's stations. Everything else waits for zoom.

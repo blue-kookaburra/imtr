@@ -10,8 +10,9 @@ interface Props {
   onSelectStation: (id: string) => void;
 }
 
-// Tap target radius in map pixels. At the app's default zoom this is a little
-// over 44 CSS px, which is the minimum comfortable touch target.
+// Tap target radius in map pixels. Only ~13 CSS px at a phone's initial fit
+// (k≈0.24) — station density at overview zoom makes bigger targets impossible;
+// it reaches the comfortable 44 CSS px once zoomed past k≈0.85.
 const HIT_R = 26;
 
 export default function MapStations({ statusByStation, focusedLine, onSelectStation }: Props) {
