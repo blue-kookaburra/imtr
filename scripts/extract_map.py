@@ -172,7 +172,7 @@ def main():
     page = doc[0]
 
     pix = page.get_pixmap(matrix=fitz.Matrix(SCALE, SCALE))
-    pix.save("public/network-map.png")
+    pix.save("docs/network-map.png")
     print(f"raster {pix.width}x{pix.height}")
 
     chains = collect_colour_chains(page)
@@ -180,7 +180,7 @@ def main():
     for k, v in colour_pts.items():
         print(f"colour {k}: {len(v)} pts in {len(chains[k])} chains")
 
-    words = ocr_words("public/network-map.png")
+    words = ocr_words("docs/network-map.png")
     print(f"OCR words: {len(words)}")
 
     station_lines = station_lines_from_data()
@@ -210,7 +210,7 @@ def main():
 
     # relaxed second pass for OCR misses
     if missing:
-        words2 = ocr_words("public/network-map.png", min_conf=15)
+        words2 = ocr_words("docs/network-map.png", min_conf=15)
         still = []
         for sid in missing:
             lids = station_lines[sid]
