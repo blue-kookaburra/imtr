@@ -20,6 +20,30 @@
   --map-label: #1f2430;
 }
 
+/* The map canvas answers to the queried time. Line hues never change; only the
+   canvas, ink and effects do. */
+.map-theme-day {
+  --map-canvas: #f3efe4;
+  --map-station-fill: #ffffff;
+  --map-station-stroke: #1f2430;
+  --map-label: #1f2430;
+  --map-glow: 0;
+}
+.map-theme-dusk {
+  --map-canvas: #d9d3ce;
+  --map-station-fill: #fdfbf6;
+  --map-station-stroke: #2b2f3a;
+  --map-label: #2b2f3a;
+  --map-glow: 0.4;
+}
+.map-theme-night {
+  --map-canvas: #12151c;
+  --map-station-fill: #12151c;
+  --map-station-stroke: #e8e4dc;
+  --map-label: #e8e4dc;
+  --map-glow: 1;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-elevated: var(--bg-elevated);
@@ -115,9 +139,15 @@ body {
   }
 }
 
-/* Map canvas: cream paper like the official network map */
 .map-canvas {
-  background:
-    radial-gradient(ellipse 90% 70% at 50% 35%, rgba(255, 255, 255, 0.55), transparent 75%),
-    #f3efe4;
+  background: var(--map-canvas);
+  transition:
+    background-color 600ms ease,
+    color 600ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-canvas {
+    transition: none;
+  }
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { LineId, StatusResponse } from "@/lib/types";
 import { LINE_BY_ID, STATIONS } from "@/lib/network/build";
+import { mapThemeFor } from "@/lib/map/theme";
 import NetworkMap, { type Selection } from "./NetworkMap";
 import LineChip from "./map/LineChip";
 import TimeBar from "./TimeBar";
@@ -36,6 +37,11 @@ export default function MapScreen() {
     const saved = localStorage.getItem("imtr:line");
     return saved && LINE_BY_ID.has(saved as LineId) ? (saved as LineId) : null;
   });
+
+  // With at === null this reads the current time once per render; the
+  // five-minute refresh interval below re-renders MapScreen, so the theme
+  // rolls over on its own without a second timer.
+  const theme = useMemo(() => mapThemeFor(at ? new Date(at) : new Date()), [at]);
 
   useEffect(() => {
     if (focusedLine) localStorage.setItem("imtr:line", focusedLine);
@@ -70,7 +76,7 @@ export default function MapScreen() {
       <TimeBar at={at} onChange={setAt} updatedAt={status?.dataUpdatedAt} stale={status?.stale} />
 
       <div className="relative min-h-0 flex-1">
-        <NetworkMap status={status} focusedLine={focusedLine} onSelect={setSel} />
+        <NetworkMap status={status} focusedLine={focusedLine} theme={theme} onSelect={setSel} />
 
         <div className="pointer-events-none absolute left-3 top-3">
           <LineChip value={focusedLine} onChange={setFocusedLine} />

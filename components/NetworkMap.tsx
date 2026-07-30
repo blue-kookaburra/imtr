@@ -3,6 +3,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { EDGES, STATIONS } from "@/lib/network/build";
 import { MAP_H, MAP_W, STATION_XY } from "@/lib/map/geometry";
+import type { MapTheme } from "@/lib/map/theme";
 import type { Edge, LineId, SegmentStatus, StationStatus, StatusResponse } from "@/lib/types";
 import { usePanZoom } from "./usePanZoom";
 import MapLines from "./map/MapLines";
@@ -16,10 +17,11 @@ export type Selection =
 interface Props {
   status: StatusResponse | null;
   focusedLine: LineId | null;
+  theme: MapTheme;
   onSelect: (sel: Selection | null) => void;
 }
 
-export default function NetworkMap({ status, focusedLine, onSelect }: Props) {
+export default function NetworkMap({ status, focusedLine, theme, onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const statusByEdge = useMemo(() => {
@@ -74,7 +76,7 @@ export default function NetworkMap({ status, focusedLine, onSelect }: Props) {
   return (
     <div
       ref={containerRef}
-      className="map-canvas relative h-full w-full touch-none overflow-hidden"
+      className={`map-canvas map-theme-${theme} relative h-full w-full touch-none overflow-hidden`}
       {...handlers}
     >
       <svg
@@ -86,7 +88,19 @@ export default function NetworkMap({ status, focusedLine, onSelect }: Props) {
           transformOrigin: "0 0",
         }}
       >
-        <MapLines statusByEdge={statusByEdge} focusedLine={focusedLine} onSelectEdge={handleEdge} />
+        <defs>
+          <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {/* One blur over one grouped layer — the glow never costs per path. */}
+        <g filter={theme === "night" ? "url(#line-glow)" : undefined}>
+          <MapLines statusByEdge={statusByEdge} focusedLine={focusedLine} onSelectEdge={handleEdge} />
+        </g>
         <MapStations
           statusByStation={statusByStation}
           focusedLine={focusedLine}
