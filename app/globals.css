@@ -17,6 +17,7 @@
   --map-canvas: #f3efe4;
   --map-station-fill: #ffffff;
   --map-station-stroke: #1f2430;
+  --map-label: #1f2430;
 }
 
 @theme inline {

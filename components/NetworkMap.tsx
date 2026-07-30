@@ -7,6 +7,7 @@ import type { Edge, LineId, SegmentStatus, StationStatus, StatusResponse } from 
 import { usePanZoom } from "./usePanZoom";
 import MapLines from "./map/MapLines";
 import MapStations from "./map/MapStations";
+import MapLabels from "./map/MapLabels";
 
 export type Selection =
   | { kind: "edge"; edge: Edge; status: SegmentStatus }
@@ -91,6 +92,7 @@ export default function NetworkMap({ status, focusedLine, onSelect }: Props) {
           focusedLine={focusedLine}
           onSelectStation={handleStation}
         />
+        <MapLabels statusByStation={statusByStation} focusedLine={focusedLine} zoom={t.k} />
       </svg>
 
       <div className="absolute bottom-16 right-3 flex flex-col overflow-hidden rounded-xl border border-hairline bg-elevated/95 backdrop-blur">
