@@ -26,8 +26,9 @@ export default function MapScreen() {
   const [error, setError] = useState(false);
   const [sel, setSel] = useState<Selection | null>(null);
   // ?line= wins; otherwise restore the last focused line from localStorage.
-  // Safe to read localStorage in the initializer: useSearchParams() above bails
-  // this component out to client-side rendering, so it never runs on the server.
+  // useSearchParams() above opts this route's prerender out of MapScreen, so
+  // production never hydrates this markup; the typeof window guard below covers
+  // dev's dynamic SSR.
   const [focusedLine, setFocusedLine] = useState<LineId | null>(() => {
     if (initialLine) return LINE_BY_ID.has(initialLine as LineId) ? (initialLine as LineId) : null;
     if (typeof window === "undefined") return null;
