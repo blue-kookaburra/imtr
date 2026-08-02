@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { extractArticleUrls, extractTableHtml, parseArticle, parsePage, tableRows } from "@/lib/scrape/parse";
+import { extractArticleUrls, extractTableHtml, parseArticle, parsePage, tableRows, sectionStations } from "@/lib/scrape/parse";
 import { computeStatus, computeCalendar } from "@/lib/status";
 import { EDGES, STATIONS, edgesBetween } from "@/lib/network/build";
 
@@ -70,7 +70,7 @@ describe("parser row formats", () => {
     );
     expect(ds).toHaveLength(1);
     expect(ds[0].lineIds.sort()).toEqual(["alamein", "belgrave", "lilydale"]);
-    expect(ds[0].stations).toContain("flinders-street"); // Parliament aliased to city
+    expect(ds[0].stations).toContain("parliament"); // Parliament is a City Loop station
     expect(ds[0].stations).toContain("box-hill");
     expect(ds[0].startMin).toBe(18 * 60); // "evening trains"
   });
@@ -197,5 +197,20 @@ describe("calendar", () => {
   it("beyond horizon shows no-data", () => {
     const days = computeCalendar("yarraville", ds, "2026-09-01", "2026-09-03", REF.toISOString(), "2026-08-22");
     expect(days.every((d) => d.status === "no-data")).toBe(true);
+  });
+});
+
+describe("City Loop station names", () => {
+  it("resolves loop stations as themselves, not as Flinders Street", () => {
+    const ids = sectionStations(
+      "Buses replace evening trains between Parliament, Alamein and Box Hill."
+    );
+    expect(ids).toContain("parliament");
+    expect(ids).not.toContain("flinders-street");
+  });
+
+  it("resolves Melbourne Central and Flagstaff", () => {
+    const ids = sectionStations("Buses replace trains between Flagstaff and Melbourne Central.");
+    expect(ids?.slice().sort()).toEqual(["flagstaff", "melbourne-central"]);
   });
 });

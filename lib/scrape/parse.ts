@@ -113,23 +113,15 @@ function matchLines(text: string): LineId[] {
   return found;
 }
 
-// City Loop stations aren't on line paths; treat them as the city end.
-const CITY_ALIASES: Record<string, string> = {
-  parliament: "flinders-street",
-  flagstaff: "flinders-street",
-  "melbourne central": "flinders-street",
-};
-
 function resolveStation(name: string): string | undefined {
-  const clean = name.trim().toLowerCase();
-  return findStationId(CITY_ALIASES[clean] ?? clean);
+  return findStationId(name.trim().toLowerCase());
 }
 
 // "between North Melbourne, Newport and Williamstown" /
 // "from Newport to Werribee" / "between Parliament, Alamein and Box Hill".
 // Returns every station mentioned so multi-branch sections can be spanned
 // per line downstream.
-function matchStations(text: string): string[] | null {
+export function sectionStations(text: string): string[] | null {
   const m = text.match(
     /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why)\b|\s+\d|$)/i
   );
@@ -217,7 +209,7 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
 
   // Affected section: "between X(, Y) and Z" / "from X to Z", or
   // "trains start and end at X" => the city end up to X is out.
-  let stations = matchStations(allText);
+  let stations = sectionStations(allText);
   if (!stations) {
     const se = allText.match(/start and end at ([A-Za-z' ]+?)(?:[.,]|$| from| between)/i);
     if (se) {
@@ -310,7 +302,7 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
       const endDate = rangeM[2] ? parseDayMonth(rangeM[2], refDate) : startDate;
       if (!startDate || !endDate) continue;
 
-      const stations = matchStations(row);
+      const stations = sectionStations(row);
       const { startMin, endMin } = matchTimeWindow(row);
 
       // Description sentence for display: from the disruption keyword onward.
