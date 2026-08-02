@@ -75,4 +75,32 @@ describe("LOOP data", () => {
       for (const s of LOOP_ONLY) expect(line.stations, `${line.id} was modified`).not.toContain(s);
     }
   });
+
+  it("orders each group's stations in their exact loop sequence", () => {
+    // order encodes real travel direction — it must be pinned exactly.
+    // Each group looked up by a line it serves (stable key, not array index).
+    expect(LOOP.groups.find((g) => g.lines.includes("craigieburn"))?.order, "Northern").toEqual([
+      "parliament",
+      "melbourne-central",
+      "flagstaff",
+    ]);
+    expect(LOOP.groups.find((g) => g.lines.includes("mernda"))?.order, "Clifton Hill").toEqual([
+      "southern-cross",
+      "flagstaff",
+      "melbourne-central",
+      "parliament",
+    ]);
+    expect(LOOP.groups.find((g) => g.lines.includes("belgrave"))?.order, "Burnley").toEqual([
+      "southern-cross",
+      "flagstaff",
+      "melbourne-central",
+      "parliament",
+    ]);
+    expect(LOOP.groups.find((g) => g.lines.includes("frankston"))?.order, "Caulfield").toEqual([
+      "southern-cross",
+      "flagstaff",
+      "melbourne-central",
+      "parliament",
+    ]);
+  });
 });
