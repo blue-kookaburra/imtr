@@ -83,3 +83,65 @@ describe("City Loop build", () => {
     expect(dupes).toEqual([]);
   });
 });
+
+import { matchSequence, edgesBetween } from "@/lib/network/build";
+import { LINES } from "@/lib/network/data";
+
+describe("match sequences", () => {
+  it("splices the loop ahead of the trunk for Burnley lines", () => {
+    expect(matchSequence("belgrave").slice(0, 8)).toEqual([
+      "flinders-street",
+      "southern-cross",
+      "flagstaff",
+      "melbourne-central",
+      "parliament",
+      "richmond",
+      "east-richmond",
+      "burnley",
+    ]);
+  });
+
+  it("splices the loop the other way round for Northern lines", () => {
+    expect(matchSequence("craigieburn").slice(0, 6)).toEqual([
+      "flinders-street",
+      "parliament",
+      "melbourne-central",
+      "flagstaff",
+      "southern-cross",
+      "north-melbourne",
+    ]);
+  });
+
+  it("leaves non-loop lines exactly as their trunk", () => {
+    for (const id of ["werribee", "sunbury", "pakenham", "sandringham", "stony-point"] as const) {
+      expect(matchSequence(id)).toEqual(LINES.find((l) => l.id === id)!.stations);
+    }
+  });
+
+  it("never repeats a station in any sequence", () => {
+    for (const line of LINES) {
+      const seq = matchSequence(line.id);
+      const dupes = seq.filter((s, i) => seq.indexOf(s) !== i);
+      expect(dupes, `${line.id} repeats`).toEqual([]);
+    }
+  });
+
+  it("keeps every trunk station, in trunk order", () => {
+    // The loop is additive: dropping or reordering a trunk station would
+    // silently change which segments an existing disruption covers.
+    for (const line of LINES) {
+      const seq = matchSequence(line.id);
+      const kept = seq.filter((s) => line.stations.includes(s));
+      expect(kept, `${line.id}`).toEqual(line.stations);
+    }
+  });
+
+  it("spans a section through the loop", () => {
+    // The real disruption text in data/disruptions.json.
+    const ids = edgesBetween("belgrave", "parliament", "box-hill").map((e) => e.id);
+    expect(ids).toContain("belgrave:parliament-richmond");
+    expect(ids).toContain("belgrave:richmond-east-richmond");
+    // Ring stretch beyond Parliament is NOT in a Parliament..Box Hill section.
+    expect(ids).not.toContain("belgrave:melbourne-central-parliament");
+  });
+});

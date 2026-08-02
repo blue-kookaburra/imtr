@@ -107,6 +107,22 @@ export const EDGES: Edge[] = built.edges;
 export const LINE_DEFS: LineDef[] = LINES;
 export const LINE_BY_ID: Map<LineId, LineDef> = new Map(LINES.map((l) => [l.id, l]));
 
+// The order used to decide which stations a disruption's section covers.
+// Distinct from both the drawn geometry and the LINES arrays: a loop-served
+// line's section can run through the ring, so the ring is spliced in ahead of
+// the trunk. Non-loop lines are just their trunk.
+const MATCH_SEQUENCES = new Map<LineId, string[]>(
+  LINES.map((line) => {
+    const group = LOOP.groups.find((g) => g.lines.includes(line.id));
+    if (!group) return [line.id, line.stations];
+    return [line.id, [line.stations[0], ...group.order, ...line.stations.slice(1)]];
+  })
+);
+
+export function matchSequence(lineId: LineId): string[] {
+  return MATCH_SEQUENCES.get(lineId) ?? [];
+}
+
 export function stationList(): Station[] {
   return [...STATIONS.values()];
 }
@@ -114,15 +130,14 @@ export function stationList(): Station[] {
 // Edges for a line between two stations (inclusive span), used to map
 // "buses replace trains between X and Y" onto map segments.
 export function edgesBetween(lineId: LineId, a: string, b: string): Edge[] {
-  const line = LINE_BY_ID.get(lineId);
-  if (!line) return [];
-  const ia = line.stations.indexOf(a);
-  const ib = line.stations.indexOf(b);
+  const seq = matchSequence(lineId);
+  const ia = seq.indexOf(a);
+  const ib = seq.indexOf(b);
   if (ia === -1 || ib === -1) return [];
   const [lo, hi] = ia < ib ? [ia, ib] : [ib, ia];
   return EDGES.filter((e) => {
     if (e.lineId !== lineId) return false;
-    const i = line.stations.indexOf(e.from);
+    const i = seq.indexOf(e.from);
     return i >= lo && i < hi;
   });
 }
