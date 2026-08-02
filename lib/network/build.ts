@@ -1,5 +1,5 @@
 import type { Edge, LineDef, LineId, Station } from "../types";
-import { ANCHORS, ARMS, LINES, NAME_OVERRIDES, type XY } from "./data";
+import { ANCHORS, ARMS, LINES, LOOP, NAME_OVERRIDES, type XY } from "./data";
 
 function titleCase(id: string): string {
   return (
@@ -52,6 +52,42 @@ function buildAll() {
       const from = line.stations[i];
       const to = line.stations[i + 1];
       edges.push({ id: `${line.id}:${from}-${to}`, lineId: line.id, from, to });
+    }
+  }
+
+  // City Loop overlay. Adds ring stations and per-line ring edges without
+  // touching the line arrays. The loop chain runs Flinders Street -> the
+  // group's ring order -> the group's portal on its own trunk, so it is
+  // parallel to (never a replacement for) the direct city edges above.
+  for (const group of LOOP.groups) {
+    const chain = ["flinders-street", ...group.order, group.portal];
+    for (const lineId of group.lines) {
+      for (const id of chain) {
+        const existing = stations.get(id);
+        if (existing) {
+          if (!existing.lines.includes(lineId)) existing.lines.push(lineId);
+        } else {
+          // Loop-only stations have no schematic coordinate. ANCHORS/ARMS are
+          // legacy anyway — the map renders from data/map-geometry.json, which
+          // carries real poster coordinates for all three.
+          stations.set(id, {
+            id,
+            name: titleCase(id),
+            lines: [lineId],
+            x: 0,
+            y: 0,
+            interchange: false,
+          });
+        }
+      }
+      for (let i = 0; i < chain.length - 1; i++) {
+        edges.push({
+          id: `${lineId}:${chain[i]}-${chain[i + 1]}`,
+          lineId,
+          from: chain[i],
+          to: chain[i + 1],
+        });
+      }
     }
   }
 
