@@ -186,10 +186,12 @@ describe("per-station status", () => {
     const res = computeStatus([], AT, UPDATED);
     expect(res.stations.length).toBe(STATIONS.size);
     for (const s of res.stations) expect(s.lines.length).toBeGreaterThan(0);
-    // The City Loop is not modelled at all, so these never appear.
+    // The City Loop is modelled as an overlay, so its stations are real now.
     const ids = new Set(res.stations.map((s) => s.stationId));
-    for (const orphan of ["flagstaff", "melbourne-central", "parliament"]) {
-      expect(ids.has(orphan), orphan).toBe(false);
+    for (const loopStation of ["flagstaff", "melbourne-central", "parliament"]) {
+      expect(ids.has(loopStation), loopStation).toBe(true);
+      const st = res.stations.find((s) => s.stationId === loopStation)!;
+      expect(st.lines.length, `${loopStation} line count`).toBe(9);
     }
   });
 });
