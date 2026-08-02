@@ -8,7 +8,7 @@ import type {
   StationStatusKind,
   StatusResponse,
 } from "./types";
-import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/build";
+import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges, matchSequence } from "./network/build";
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
 import { melbourneLocalToIso, melbourneTimeLabel } from "./meltz";
 
@@ -109,14 +109,14 @@ export function computeStatus(
 function lineSpan(d: Disruption, lineId: LineId): { from: string; to: string } | null {
   if (!d.parsed) return null;
   const mentioned = d.stations ?? (d.fromStation && d.toStation ? [d.fromStation, d.toStation] : []);
-  const line = LINE_DEFS.find((l) => l.id === lineId);
-  if (!line) return null;
+  const seq = matchSequence(lineId);
+  if (seq.length === 0) return null;
   const idxs = mentioned
-    .map((s) => line.stations.indexOf(s))
+    .map((s) => seq.indexOf(s))
     .filter((i) => i !== -1)
     .sort((a, b) => a - b);
   if (idxs.length < 2) return null;
-  return { from: line.stations[idxs[0]], to: line.stations[idxs[idxs.length - 1]] };
+  return { from: seq[idxs[0]], to: seq[idxs[idxs.length - 1]] };
 }
 
 // Is a station inside the affected section of a disruption on a given line?
@@ -124,10 +124,10 @@ function stationInSection(stationId: string, d: Disruption, lineId: LineId): boo
   if (d.wholeLine || !d.parsed) return true;
   const span = lineSpan(d, lineId);
   if (!span) return false;
-  const line = LINE_DEFS.find((l) => l.id === lineId)!;
-  const i = line.stations.indexOf(stationId);
-  const lo = line.stations.indexOf(span.from);
-  const hi = line.stations.indexOf(span.to);
+  const seq = matchSequence(lineId);
+  const i = seq.indexOf(stationId);
+  const lo = seq.indexOf(span.from);
+  const hi = seq.indexOf(span.to);
   return i !== -1 && i >= lo && i <= hi;
 }
 
@@ -153,11 +153,11 @@ function reachableFromBeyond(
   span: { from: string; to: string },
   lineId: LineId
 ): boolean {
-  const line = LINE_DEFS.find((l) => l.id === lineId);
-  if (!line) return false;
-  const i = line.stations.indexOf(stationId);
+  const seq = matchSequence(lineId);
+  const i = seq.indexOf(stationId);
+  if (i === -1) return false;
   if (stationId === span.from) return i > 0;
-  if (stationId === span.to) return i < line.stations.length - 1;
+  if (stationId === span.to) return i < seq.length - 1;
   return false;
 }
 
