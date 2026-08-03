@@ -1,9 +1,17 @@
 import { describe, it, expect } from "vitest";
-import { computeStationStatuses, computeStatus } from "@/lib/status";
+import { computeStationStatuses, computeStatus, computeCalendar } from "@/lib/status";
 import { toMelTime } from "@/lib/spans";
 import { parsePage, parseArticle } from "@/lib/scrape/parse";
 import { EDGES } from "@/lib/network/build";
 import type { Disruption, LineId } from "@/lib/types";
+
+// Shared helper for the real-parser end-to-end tests below: wrap a table
+// row in the minimal __NEXT_DATA__ shell parsePage expects.
+function rowPage(row: string): string {
+  return `<script id="__NEXT_DATA__">${JSON.stringify({
+    props: { pageProps: { body: { Text: { value: `<table><tr><td>${row}</td></tr></table>` } } } },
+  })}</script>`;
+}
 
 function disruption(over: Partial<Disruption>): Disruption {
   return {
@@ -243,12 +251,6 @@ describe("loop-only disruptions via the real parser (end-to-end)", () => {
 // the real parser end to end to confirm C3/C4 are still closed after this
 // round's wholeLine/parsed fix.
 describe("adversarial strings stay closed (C3/C4 regression)", () => {
-  function rowPage(row: string) {
-    return `<script id="__NEXT_DATA__">${JSON.stringify({
-      props: { pageProps: { body: { Text: { value: `<table><tr><td>${row}</td></tr></table>` } } } },
-    })}</script>`;
-  }
-
   it("C4: a whole-line bus replacement phrased like the loop boilerplate is not read as a loop closure", () => {
     const row =
       "Belgrave Line: Buses replace trains. Buses run direct to Flinders Street Station. " +
@@ -266,5 +268,190 @@ describe("adversarial strings stay closed (C3/C4 regression)", () => {
     const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
     expect(disruptions).toHaveLength(1);
     expect(disruptions[0].skipsStations).toBeUndefined();
+  });
+});
+
+// F1: a whole-line bus replacement was being silently discarded whenever a
+// loop sentence co-occurred on the same disruption, because wholeLine was
+// computed as `!stations && !skipsStations`. Both claims must survive
+// together: the trunk is bussed AND the ring is skipped.
+describe("whole-line replacement co-occurring with a loop closure (F1 regression)", () => {
+  const row =
+    "Belgrave Line: Buses replace trains. The City Loop is closed. " +
+    "Monday 10 August to Wednesday 12 August.";
+  const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+  // Tuesday midday, inside the Aug 10-12 date range, well within timetabled hours.
+  const AT = new Date("2026-08-11T02:00:00Z");
+
+  it("parses both claims onto the same disruption", () => {
+    expect(disruptions).toHaveLength(1);
+    const d = disruptions[0];
+    expect(d.wholeLine).toBe(true);
+    expect(d.skipsStations?.slice().sort()).toEqual(
+      ["flagstaff", "melbourne-central", "parliament"].sort()
+    );
+  });
+
+  it("severs the whole line on the map, not just the 4 ring edges", () => {
+    const res = computeStatus(disruptions, AT, "2026-08-04T00:00:00Z");
+    const segStatus = (id: string) => res.segments.find((s) => s.edgeId === id)!.status;
+
+    // Ring edge: severed (unchanged from a loop-only closure).
+    expect(segStatus("belgrave:southern-cross-flagstaff")).toBe("bus-replacement");
+    // Trunk edge out on the branch — this is the defect this test exists to
+    // catch: previously wholeLine was suppressed by the co-occurring loop
+    // sentence, so this stayed "running" while the text said the whole line
+    // was bussed.
+    const ringwoodEdge = EDGES.find(
+      (e) => e.lineId === "belgrave" && e.from === "heatherdale" && e.to === "ringwood"
+    )!;
+    expect(segStatus(ringwoodEdge.id)).toBe("bus-replacement");
+
+    // The ring-skip pass and the whole-line pass both touch the ring edges;
+    // that must not double up the same disruption id on one segment.
+    const ringSeg = res.segments.find((s) => s.edgeId === "belgrave:southern-cross-flagstaff")!;
+    expect(ringSeg.disruptionIds).toEqual([disruptions[0].id]);
+
+    // No false "couldn't parse a section" warning either — both claims
+    // resolved to a confident answer.
+    expect(res.lineWarnings.find((w) => w.lineId === "belgrave")).toBeUndefined();
+  });
+
+  it("cuts trunk and ring stations alike — the ring is never less severe than the trunk", () => {
+    const t = toMelTime(AT);
+    const stations = computeStationStatuses(disruptions, t, new Map());
+    const at = (id: string) =>
+      stations.find((s) => s.stationId === id)!.lines.find((l) => l.lineId === "belgrave")!.status;
+    expect(at("parliament")).toBe("cut"); // ring
+    expect(at("ringwood")).toBe("cut"); // trunk, well out on the branch
+    expect(at("belgrave")).toBe("cut"); // trunk terminus
+  });
+});
+
+// F2: the LOOP_CLOSED "subject must be TRAINS" guard only worked because its
+// regression test happened to put a full stop between the two clauses,
+// which [^.]{0,60} can't cross. Single-sentence phrasing — "trains" as the
+// OBJECT of "replace", immediately followed by "run direct to Flinders
+// Street" — defeated it completely. These must all resolve as ordinary
+// whole-line replacements, never loop closures.
+describe("whole-line replacement phrased like loop boilerplate, single sentence (F2 regression)", () => {
+  it("'Coaches replace trains and run direct to Flinders Street.' is whole-line, not a loop closure", () => {
+    const row =
+      "Sandringham Line: Coaches replace trains and run direct to Flinders Street. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(disruptions).toHaveLength(1);
+    expect(disruptions[0].skipsStations).toBeUndefined();
+    expect(disruptions[0].wholeLine).toBe(true);
+  });
+
+  it("'Buses replace trains, running direct to Flinders Street.' is whole-line, not a loop closure", () => {
+    const row =
+      "Sandringham Line: Buses replace trains, running direct to Flinders Street. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(disruptions).toHaveLength(1);
+    expect(disruptions[0].skipsStations).toBeUndefined();
+    expect(disruptions[0].wholeLine).toBe(true);
+  });
+});
+
+// F4: two LOOP_CLOSED alternatives ("will not run via the loop", "will not
+// stop at [the three ring stations]") were unreachable because
+// DISRUPTION_KEYWORDS/SERVICE_GAP gated on them before loopSkippedStations
+// was ever called, and neither gate recognised "will not run" or "will not
+// stop at". These texts previously parsed to no disruption at all.
+describe("loop-only phrasings reach loopSkippedStations (F4 regression)", () => {
+  it("'Trains will not run via the City Loop.' produces a disruption with the ring skipped", () => {
+    const row =
+      "Craigieburn Line: Trains will not run via the City Loop. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(disruptions).toHaveLength(1);
+    const d = disruptions[0];
+    expect(d.skipsStations?.slice().sort()).toEqual(
+      ["flagstaff", "melbourne-central", "parliament"].sort()
+    );
+    expect(d.wholeLine).toBe(false);
+    expect(d.parsed).toBe(true);
+  });
+
+  it("'Trains will not stop at Flagstaff, Melbourne Central and Parliament.' produces a disruption too", () => {
+    const row =
+      "Belgrave Line: Trains will not stop at Flagstaff, Melbourne Central and Parliament. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(disruptions).toHaveLength(1);
+    expect(disruptions[0].skipsStations?.slice().sort()).toEqual(
+      ["flagstaff", "melbourne-central", "parliament"].sort()
+    );
+  });
+
+  it("parseArticle reaches the same alternative", () => {
+    const articleHtml = `<script id="__NEXT_DATA__">${JSON.stringify({
+      props: {
+        pageProps: {
+          disruption: {
+            ID: 5150,
+            Title: "Craigieburn Line",
+            ArticleTitle: "Craigieburn Line: City Loop closure",
+            SubtitleMessage: "Trains will not run via the City Loop.",
+            FromDate: "2026-08-10 21:00:00",
+            ToDate: "2026-08-12 05:00:00",
+            Article: "<p>Trains will not run via the City Loop.</p>",
+            Lines: { "1": { Line: "Craigieburn" } },
+          },
+        },
+      },
+    })}</script>`;
+    const d = parseArticle(articleHtml, "https://example.test/article");
+    expect(d).not.toBeNull();
+    expect(d!.skipsStations?.slice().sort()).toEqual(
+      ["flagstaff", "melbourne-central", "parliament"].sort()
+    );
+  });
+});
+
+// F3: the Calendar tab was blind to skipsStations — stationInSection never
+// consulted it, so a loop closure with no separately-stated section (span
+// null) read every station as unaffected on every day. This is a
+// regression against main, which got the same text right via the old
+// `wholeLine: !stations` shape. Exercise computeCalendar (no existing test
+// did) with real parser output on canonical loop-closure text.
+describe("computeCalendar sees a loop closure (F3 regression)", () => {
+  const LOOP_ROW =
+    "Belgrave Line: The City Loop is closed for maintenance. Trains run direct to Flinders Street. " +
+    "Monday 10 August to Wednesday 12 August.";
+  const disruptions = parsePage(rowPage(LOOP_ROW), new Date("2026-08-01T00:00:00Z"));
+
+  it("marks the affected ring station's days as disrupted, never normal", () => {
+    const days = computeCalendar(
+      "parliament",
+      disruptions,
+      "2026-08-09",
+      "2026-08-13",
+      "2026-08-04T00:00:00Z",
+      "2026-09-01"
+    );
+    const byDate = Object.fromEntries(days.map((d) => [d.date, d.status]));
+    expect(byDate["2026-08-09"]).toBe("normal"); // before the window
+    expect(byDate["2026-08-13"]).toBe("normal"); // after the window
+    // Inside the window: this is the defect the fix closes. On main this
+    // read "disrupted"; on this branch, pre-fix, it silently read "normal".
+    expect(byDate["2026-08-10"]).not.toBe("normal");
+    expect(byDate["2026-08-11"]).not.toBe("normal");
+    expect(byDate["2026-08-12"]).not.toBe("normal");
+  });
+
+  it("leaves a trunk station's calendar untouched by the ring closure", () => {
+    const days = computeCalendar(
+      "ringwood",
+      disruptions,
+      "2026-08-10",
+      "2026-08-12",
+      "2026-08-04T00:00:00Z",
+      "2026-09-01"
+    );
+    expect(days.every((d) => d.status === "normal")).toBe(true);
   });
 });

@@ -29,8 +29,8 @@ export default function MapStations({ statusByStation, focusedLine, onSelectStat
         // which misleads at interchanges (one closed line makes Flinders
         // Street read as "cut" while eleven others run fine). Prefer the
         // focused line's own reading when one is focused; this falls back to
-        // the worst-line reading until Task 6 wires the picker, which is fine
-        // — it errs toward showing a problem rather than hiding one.
+        // the worst-line reading when no line is focused, which is fine — it
+        // errs toward showing a problem rather than hiding one.
         const stationStatus = statusByStation.get(s.id);
         const focusedEntry = focusedLine
           ? stationStatus?.lines.find((l) => l.lineId === focusedLine)

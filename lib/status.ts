@@ -52,6 +52,14 @@ export function computeStatus(
     }
   }
 
+  // Sever a segment and record the disruption, without listing the same
+  // disruption twice on one segment — a whole-line replacement and a
+  // co-occurring City Loop closure both touch the ring edges below.
+  const markSegment = (s: SegmentStatus, d: Disruption): void => {
+    s.status = "bus-replacement";
+    if (!s.disruptionIds.includes(d.id)) s.disruptionIds.push(d.id);
+  };
+
   const lineWarnings = new Map<LineId, Set<string>>();
   for (const d of active) {
     for (const lineId of d.lineIds) {
@@ -62,12 +70,14 @@ export function computeStatus(
       // meaning below — it never replaces it. Sever just the ring edges that
       // touch a skipped station (never Flinders Street/Southern Cross, which
       // are the surface route every train uses whether via the loop or not).
+      // The whole-line branch below can also cover these same edges (a
+      // whole-line replacement and a loop closure can both be true on one
+      // disruption) — markSegment dedupes so that's a no-op, not a double
+      // count.
       if (d.skipsStations) {
         for (const e of lineEdges(lineId)) {
           if (!d.skipsStations.includes(e.from) && !d.skipsStations.includes(e.to)) continue;
-          const s = segmentMap.get(e.id)!;
-          s.status = "bus-replacement";
-          s.disruptionIds.push(d.id);
+          markSegment(segmentMap.get(e.id)!, d);
         }
       }
 
@@ -81,16 +91,14 @@ export function computeStatus(
           continue;
         }
         for (const e of edges) {
-          const s = segmentMap.get(e.id)!;
-          s.status = "bus-replacement";
-          s.disruptionIds.push(d.id);
+          markSegment(segmentMap.get(e.id)!, d);
         }
       } else if (d.parsed && d.wholeLine) {
-        // Explicit whole-line replacement ("Buses replace trains.").
+        // Explicit whole-line replacement ("Buses replace trains.") — wins
+        // for the trunk. A co-occurring skipsStations already severed the
+        // ring above; this covers the rest of the line to the same severity.
         for (const e of lineEdges(lineId)) {
-          const s = segmentMap.get(e.id)!;
-          s.status = "bus-replacement";
-          s.disruptionIds.push(d.id);
+          markSegment(segmentMap.get(e.id)!, d);
         }
       } else if (!d.skipsStations) {
         // Couldn't parse a section: warn on the whole line, never a
@@ -136,6 +144,13 @@ function lineSpan(d: Disruption, lineId: LineId): { from: string; to: string } |
 
 // Is a station inside the affected section of a disruption on a given line?
 function stationInSection(stationId: string, d: Disruption, lineId: LineId): boolean {
+  // A City Loop closure names its affected stations directly rather than as
+  // a span — check that before anything else, the same way computeStatus and
+  // computeStationStatuses do. Without this, a loop-only disruption
+  // (skipsStations set, no separate section) has no span at all and every
+  // caller of this function — including the Calendar tab — reads every
+  // station as unaffected: a silent all-clear.
+  if (d.skipsStations?.includes(stationId)) return true;
   if (d.wholeLine || !d.parsed) return true;
   const span = lineSpan(d, lineId);
   if (!span) return false;

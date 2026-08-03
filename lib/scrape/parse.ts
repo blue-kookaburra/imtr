@@ -140,16 +140,31 @@ const LOOP_SKIPPED = ["flagstaff", "melbourne-central", "parliament"];
 
 // "The line runs, the ring does not." The subject must be TRAINS — "buses run
 // direct to Flinders Street" is a whole-line bus replacement, and reading it as
-// a loop closure would report the trunk as running normally. A skip list
-// naming a single loop station is not a ring closure (that station could be
-// skipped for any number of unrelated reasons) — it only counts once all
-// three ring stations are named together, stable CMS boilerplate.
+// a loop closure would report the trunk as running normally. That guard has
+// to survive "trains" appearing as the OBJECT of a replacement phrase too:
+// "buses replace trains and run direct to Flinders Street" and "replacement
+// buses for trains run direct to Flinders Street" both put "trains" right
+// before "run direct" without it ever being the thing doing the running. The
+// negative lookbehinds reject "trains" when it's what's being replaced or
+// stood in for, so only a real "trains run/do not run/bypass" claim counts.
+// A skip list naming a single loop station is not a ring closure (that
+// station could be skipped for any number of unrelated reasons) — it only
+// counts once all three ring stations are named together, stable CMS
+// boilerplate.
 const LOOP_CLOSED =
-  /\btrains?\b[^.]{0,60}?\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?(?:via|through)\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff,?\s+melbourne\s+central\s+and\s+parliament)|\bcity\s+loop\s+(?:is\s+)?closed\b/i;
+  /(?<!replace[sd]?\s)(?<!replacing\s)(?<!for\s)\btrains?\b[^.]{0,60}?\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?(?:via|through)\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff,?\s+melbourne\s+central\s+and\s+parliament)|\bcity\s+loop\s+(?:is\s+)?closed\b/i;
 
 export function loopSkippedStations(text: string): string[] | null {
   return LOOP_CLOSED.test(text) ? [...LOOP_SKIPPED] : null;
 }
+
+// A whole-line bus/coach replacement is a separate claim from a City Loop
+// closure, and the two can co-occur on one disruption ("Buses replace
+// trains. The City Loop is closed."). Detect it by its own wording rather
+// than inferring it from the mere absence of a parsed station section, so a
+// co-occurring loop sentence can never suppress it.
+const WHOLE_LINE_REPLACED =
+  /\bbuses\s+replace\s+trains\b|\bcoaches\s+replace\s+trains\b|\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do\s+)?not\s+run\b/i;
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
   const lower = text.toLowerCase();
@@ -172,8 +187,12 @@ function hashId(s: string): string {
   return "d" + (h >>> 0).toString(36);
 }
 
+// Includes the loop-specific phrasings ("will not run [via/through] the
+// loop", "bypassing", "will not stop at") so a pure loop closure — which
+// never says "buses replace trains" — still clears this gate and reaches
+// loopSkippedStations below instead of being silently dropped.
 const DISRUPTION_KEYWORDS =
-  /buses replace|bus replacement|no trains|trains (?:do )?not run|closed|coaches replace|service(?:s)? (?:will )?not run/i;
+  /buses replace|bus replacement|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|closed|coaches replace|service(?:s)? (?:will )?not run/i;
 
 // Article page URLs linked from a planned-works line page. These per-
 // disruption pages carry exact start/end timestamps the tables lack.
@@ -217,8 +236,10 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
     .replace(/\s+/g, " ");
   const allText = `${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""} ${plainArticle}`;
 
+  // See DISRUPTION_KEYWORDS above for why the loop-specific phrasings are
+  // included: a pure loop closure never says "buses replace trains".
   const SERVICE_GAP =
-    /buses replace|bus replacement|no trains|trains (?:do )?not run|coaches replace|closed|start and end at/i;
+    /buses replace|bus replacement|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|coaches replace|closed|start and end at/i;
   if (!SERVICE_GAP.test(allText)) return null;
 
   // Lines from the structured Lines map, falling back to name-matching.
@@ -249,6 +270,14 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
   // stated, and it must never fall back to "couldn't parse a section" either.
   const skipsStations = loopSkippedStations(allText) ?? undefined;
 
+  // Title/subtitle hinting at a station section we failed to parse: don't
+  // confidently call anything whole-line in that case, whole-line-worded or
+  // not — a mangled "between X and Y" is not "no section at all".
+  const titleHintsUnparsedSection = /between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`);
+  // Whole-line bus/coach replacement is its own claim, independent of a
+  // co-occurring City Loop closure — both can be true on one disruption.
+  const wholeLine = !stations && !titleHintsUnparsedSection && WHOLE_LINE_REPLACED.test(allText);
+
   const base = {
     id: `art-${a.ID}`,
     lineIds,
@@ -256,14 +285,11 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
     toStation: stations?.[stations.length - 1],
     stations: stations ?? undefined,
     skipsStations,
-    wholeLine: !stations && !skipsStations,
+    wholeLine,
     // No section found: confident whole-line only when the title doesn't
     // hint at a station section we failed to parse. A loop closure is its
     // own confident claim regardless.
-    parsed:
-      !!stations ||
-      !!skipsStations ||
-      !/between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`),
+    parsed: !!stations || !!skipsStations || wholeLine || !titleHintsUnparsedSection,
     rawText: summary,
     source: "planned-works" as const,
     url: articleUrl,
@@ -344,10 +370,13 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
       const kwIndex = row.search(DISRUPTION_KEYWORDS);
       const rawText = row.slice(kwIndex).split(/(?<=\.)\s/)[0].trim();
 
-      // "Buses replace trains." with no section text and no loop closure =
-      // the whole line is replaced; that's a confident blackout, not a
-      // warning.
-      const wholeLineExplicit = !stations && !skipsStations && !/\b(between|from)\b/i.test(rawText);
+      // "Buses replace trains." with no section text = the whole line is
+      // replaced; that's a confident blackout, not a warning. This is
+      // independent of a co-occurring loop closure — "Buses replace trains.
+      // The City Loop is closed." bussed the whole line AND skips the ring,
+      // and neither claim should suppress the other.
+      const wholeLine =
+        !stations && !/\b(between|from)\b/i.test(rawText) && WHOLE_LINE_REPLACED.test(rawText);
 
       const id = hashId(`${lineIds.join(",")}|${startDate}|${endDate}|${rawText}`);
       if (out.has(id)) continue;
@@ -358,8 +387,8 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
         toStation: stations?.[stations.length - 1],
         stations: stations ?? undefined,
         skipsStations,
-        wholeLine: !stations && !skipsStations,
-        parsed: !!stations || wholeLineExplicit || !!skipsStations,
+        wholeLine,
+        parsed: !!stations || wholeLine || !!skipsStations,
         startDate,
         endDate,
         startMin,

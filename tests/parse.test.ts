@@ -267,6 +267,21 @@ describe("loop closures", () => {
     expect(loopSkippedStations("Buses run direct to Flinders Street Station.")).toBeNull();
   });
 
+  it("does not fire when 'trains' is the OBJECT of a replacement, not the subject of 'run'", () => {
+    // These four all put "trains" right before "run direct to Flinders
+    // Street" without "trains" ever being the thing doing the running — a
+    // review round found the previous subject guard couldn't tell the
+    // difference when the two clauses shared one sentence (no full stop to
+    // block the {0,60} reach).
+    expect(loopSkippedStations("Buses replace trains and run direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Coaches replace trains and run direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Buses replace trains, running direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Replacement buses for trains run direct to Flinders Street.")).toBeNull();
+    // The correctly-punctuated version (two sentences) still reads as not a
+    // loop closure either — the regression this all started from.
+    expect(loopSkippedStations("Buses replace trains. Buses run direct to Flinders Street.")).toBeNull();
+  });
+
   it("keeps sectionStations reporting only the named section when both signals are present", () => {
     // Both signals present: sectionStations reports only the explicit
     // section; loopSkippedStations independently picks up the loop mention.
