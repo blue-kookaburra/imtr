@@ -1,5 +1,5 @@
 import type { Disruption, LineId } from "../types";
-import { LINES } from "../network/data";
+import { LINES, LOOP } from "../network/data";
 import { findStationId } from "../network/build";
 import { melbourneDateOf, melbourneLocalToIso } from "../meltz";
 
@@ -117,6 +117,16 @@ function resolveStation(name: string): string | undefined {
   return findStationId(name.trim().toLowerCase());
 }
 
+// Melbourne CMS boilerplate for "the line runs, the ring does not". Requires a
+// loop-specific phrase: a bare "to Flinders Street" is how half of all
+// disruption text ends and must not fire this.
+const LOOP_CLOSED =
+  /\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?via\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff)/i;
+
+// Flinders Street is included so every affected line's match sequence has two
+// endpoints to span between; the three ring-only stations are the payload.
+const LOOP_SECTION = ["flinders-street", ...LOOP.ring.filter((s) => s !== "flinders-street" && s !== "southern-cross")];
+
 // "between North Melbourne, Newport and Williamstown" /
 // "from Newport to Werribee" / "between Parliament, Alamein and Box Hill".
 // Returns every station mentioned so multi-branch sections can be spanned
@@ -125,10 +135,14 @@ export function sectionStations(text: string): string[] | null {
   const m = text.match(
     /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why)\b|\s+\d|$)/i
   );
-  if (!m) return null;
-  const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
-  const ids = [...new Set(parts.map(resolveStation).filter((s): s is string => !!s))];
-  return ids.length >= 2 ? ids : null;
+  if (m) {
+    const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
+    const ids = [...new Set(parts.map(resolveStation).filter((s): s is string => !!s))];
+    if (ids.length >= 2) return ids;
+  }
+  // No explicit section, but the text says the ring is shut.
+  if (LOOP_CLOSED.test(text)) return [...LOOP_SECTION];
+  return null;
 }
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {

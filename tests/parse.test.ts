@@ -214,3 +214,43 @@ describe("City Loop station names", () => {
     expect(ids?.slice().sort()).toEqual(["flagstaff", "melbourne-central"]);
   });
 });
+
+describe("loop-only disruptions", () => {
+  it("reads 'run direct to Flinders Street' as the ring being out", () => {
+    const ids = sectionStations(
+      "Trains run direct to Flinders Street and will not run via the City Loop."
+    );
+    expect(ids?.slice().sort()).toEqual(
+      ["flagstaff", "flinders-street", "melbourne-central", "parliament"].sort()
+    );
+  });
+
+  it("reads an explicit skip list", () => {
+    const ids = sectionStations(
+      "Trains will not stop at Flagstaff, Melbourne Central and Parliament."
+    );
+    expect(ids).toContain("flagstaff");
+    expect(ids).toContain("parliament");
+  });
+
+  it("prefers an explicit section over the loop phrase", () => {
+    // Both signals present: the named section is the stronger one.
+    const ids = sectionStations(
+      "Buses replace trains between Ringwood and Belgrave. Other trains run direct to Flinders Street."
+    );
+    expect(ids?.slice().sort()).toEqual(["belgrave", "ringwood"].sort());
+  });
+
+  it("does not fire on ordinary city-bound wording", () => {
+    // "to Flinders Street" alone is how half of all disruption text ends, and
+    // this one is already a well-formed section.
+    const ids = sectionStations("Buses replace trains from Ringwood to Flinders Street.");
+    expect(ids).not.toContain("flagstaff");
+    expect(ids?.slice().sort()).toEqual(["flinders-street", "ringwood"].sort());
+  });
+
+  it("still declines to guess on text with no section and no loop phrase", () => {
+    expect(sectionStations("Major works affecting services. Check before you travel.")).toBeNull();
+    expect(sectionStations("Trains may be delayed up to 20 minutes.")).toBeNull();
+  });
+});
