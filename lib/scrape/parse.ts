@@ -244,17 +244,26 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
     ? a.ArticleTitle.slice(a.ArticleTitle.indexOf(":") + 1).trim()
     : (a.ArticleTitle ?? a.SubtitleMessage);
 
+  // A loop closure is a precise claim on its own — it must never be widened
+  // into "the whole line is replaced" just because no separate section was
+  // stated, and it must never fall back to "couldn't parse a section" either.
+  const skipsStations = loopSkippedStations(allText) ?? undefined;
+
   const base = {
     id: `art-${a.ID}`,
     lineIds,
     fromStation: stations?.[0],
     toStation: stations?.[stations.length - 1],
     stations: stations ?? undefined,
-    skipsStations: loopSkippedStations(allText) ?? undefined,
-    wholeLine: !stations,
+    skipsStations,
+    wholeLine: !stations && !skipsStations,
     // No section found: confident whole-line only when the title doesn't
-    // hint at a station section we failed to parse.
-    parsed: !!stations || !/between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`),
+    // hint at a station section we failed to parse. A loop closure is its
+    // own confident claim regardless.
+    parsed:
+      !!stations ||
+      !!skipsStations ||
+      !/between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`),
     rawText: summary,
     source: "planned-works" as const,
     url: articleUrl,
@@ -324,15 +333,21 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
       if (!startDate || !endDate) continue;
 
       const stations = sectionStations(row);
+      // A loop closure is a precise claim on its own — it must never be
+      // widened into "the whole line is replaced" just because no separate
+      // section was stated, and it must never fall back to "couldn't parse a
+      // section" either.
+      const skipsStations = loopSkippedStations(row) ?? undefined;
       const { startMin, endMin } = matchTimeWindow(row);
 
       // Description sentence for display: from the disruption keyword onward.
       const kwIndex = row.search(DISRUPTION_KEYWORDS);
       const rawText = row.slice(kwIndex).split(/(?<=\.)\s/)[0].trim();
 
-      // "Buses replace trains." with no section text = the whole line is
-      // replaced; that's a confident blackout, not a warning.
-      const wholeLineExplicit = !stations && !/\b(between|from)\b/i.test(rawText);
+      // "Buses replace trains." with no section text and no loop closure =
+      // the whole line is replaced; that's a confident blackout, not a
+      // warning.
+      const wholeLineExplicit = !stations && !skipsStations && !/\b(between|from)\b/i.test(rawText);
 
       const id = hashId(`${lineIds.join(",")}|${startDate}|${endDate}|${rawText}`);
       if (out.has(id)) continue;
@@ -342,9 +357,9 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
         fromStation: stations?.[0],
         toStation: stations?.[stations.length - 1],
         stations: stations ?? undefined,
-        skipsStations: loopSkippedStations(row) ?? undefined,
-        wholeLine: !stations,
-        parsed: !!stations || wholeLineExplicit,
+        skipsStations,
+        wholeLine: !stations && !skipsStations,
+        parsed: !!stations || wholeLineExplicit || !!skipsStations,
         startDate,
         endDate,
         startMin,

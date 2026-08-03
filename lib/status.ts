@@ -92,9 +92,11 @@ export function computeStatus(
           s.status = "bus-replacement";
           s.disruptionIds.push(d.id);
         }
-      } else {
+      } else if (!d.skipsStations) {
         // Couldn't parse a section: warn on the whole line, never a
-        // possibly-wrong blackout.
+        // possibly-wrong blackout. A loop closure with no other section
+        // already has a precise answer — the ring edges severed above — so
+        // it never falls through to this "we don't understand it" warning.
         if (!lineWarnings.has(lineId)) lineWarnings.set(lineId, new Set());
         lineWarnings.get(lineId)!.add(d.id);
       }
