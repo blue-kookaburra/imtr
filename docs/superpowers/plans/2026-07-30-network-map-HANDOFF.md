@@ -105,7 +105,7 @@ knowing about independently of the redesign.
 - **City Loop is no longer absent as of Task 8 (2026-08-04).** Previously the plan noted that Flagstaff, Melbourne Central and Parliament had coordinates but were not drawn. The City Loop is now fully modelled as an overlay with per-line ring edges, loop closures handled via `skipsStations`, and all five stations rendered.
 - **`npm run lint` does not pass on this branch, and did not before it either.** Three
   pre-existing `react-hooks/set-state-in-effect` errors in `CalendarScreen.tsx:58`,
-  `MapScreen.tsx:39`, `StationSearch.tsx:33`. The plan says "lint → PASS" in several places;
+  `MapScreen.tsx:68`, `StationSearch.tsx:33`. The plan says "lint → PASS" in several places;
   that expectation is wrong. Check you have added no *new* errors instead.
 - **`data/map-geometry.json` is generated. Never hand-edit it.** Fix geometry in
   `data/map-overrides.json` or the scoring in `scripts/build_map_geometry.ts`, then
