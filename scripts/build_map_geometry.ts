@@ -96,6 +96,17 @@ const CANDIDATES: XY[] = [
   [0, 1],
 ];
 
+// Hand-placed corrections for labels the automatic placer still collides.
+// placeLabels() scores candidates by point-to-point distance, so it doesn't
+// know two wide labels can overlap even while sitting on different sides of
+// their dots. Applied after placeLabels() — an entry here always wins.
+const LABEL_OVERRIDES: Record<string, LabelPlacement> = {
+  // Flagstaff and North Melbourne both landed directly above their dots;
+  // their City Loop / Craigieburn-Upfield interchange labels are wide enough
+  // to overlap at that spacing. Push North Melbourne up-left instead.
+  "north-melbourne": { dx: -22, dy: -14, anchor: "end" },
+};
+
 function anchorFor(dx: number): Anchor {
   if (dx > 4) return "start";
   if (dx < -4) return "end";
@@ -210,7 +221,7 @@ function build() {
     .filter((id) => !rendered.has(id))
     .sort();
 
-  const labels = placeLabels(stations, edges, rendered);
+  const labels = { ...placeLabels(stations, edges, rendered), ...LABEL_OVERRIDES };
 
   const out = {
     width: extracted.width,

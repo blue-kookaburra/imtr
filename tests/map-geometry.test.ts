@@ -73,10 +73,11 @@ describe("map geometry", () => {
     }
   });
 
-  it("pins the known orphan stations", () => {
-    // The City Loop is not modelled in lib/network/data.ts, so these three
-    // have coordinates but no edges and are deliberately not rendered.
-    expect([...ORPHAN_STATIONS].sort()).toEqual(["flagstaff", "melbourne-central", "parliament"]);
+  it("has no orphan stations now the City Loop ring is drawn", () => {
+    // flagstaff, melbourne-central and parliament used to have coordinates
+    // but no edges (the loop wasn't modelled in lib/network/data.ts yet).
+    // Now every loop edge has a polyline, so nothing should be orphaned.
+    expect([...ORPHAN_STATIONS].sort()).toEqual([]);
   });
 
   it("simplifies polylines without moving them far", () => {
