@@ -58,6 +58,19 @@ export function computeStatus(
       // Outside timetabled hours "no trains" already tells the story;
       // don't paint bus replacements over it at 4am.
       if (!isServiceRunning(lineId, t)) continue;
+      // A City Loop closure rides alongside any explicit section/whole-line
+      // meaning below — it never replaces it. Sever just the ring edges that
+      // touch a skipped station (never Flinders Street/Southern Cross, which
+      // are the surface route every train uses whether via the loop or not).
+      if (d.skipsStations) {
+        for (const e of lineEdges(lineId)) {
+          if (!d.skipsStations.includes(e.from) && !d.skipsStations.includes(e.to)) continue;
+          const s = segmentMap.get(e.id)!;
+          s.status = "bus-replacement";
+          s.disruptionIds.push(d.id);
+        }
+      }
+
       const span = lineSpan(d, lineId);
       if (span) {
         const edges = edgesBetween(lineId, span.from, span.to);
@@ -191,6 +204,17 @@ export function computeStationStatuses(
 
       for (const d of active) {
         if (!d.lineIds.includes(lineId)) continue;
+
+        // City Loop closure: this exact station is named as skipped, full
+        // stop. Not a span, so it must never go through lineSpan/reachability
+        // — that logic treats index 0 (Flinders Street) as unreachable "from
+        // beyond", which would wrongly cut the station the text says trains
+        // still run to.
+        if (d.skipsStations?.includes(station.id)) {
+          if (STATION_RANK.cut > STATION_RANK[status]) status = "cut";
+          ids.add(d.id);
+          continue;
+        }
 
         // Mirror computeStatus's precedence. A disruption with no usable span
         // is a line-level warning, already carried by `unmapped` — never a

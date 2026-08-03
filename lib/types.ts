@@ -94,6 +94,11 @@ export interface Disruption {
   // ("between Parliament, Alamein and Box Hill") span min..max of the ones
   // present on each affected line.
   stations?: string[];
+  // Stations skipped while the line itself keeps running — a City Loop
+  // closure ("trains run direct to Flinders Street"). Deliberately NOT a
+  // span: it names exactly the stations that lose service and never widens
+  // to cover anything between them.
+  skipsStations?: string[];
   wholeLine: boolean;
   parsed: boolean; // false => render as warning, never blackout
   // Inclusive date range, local Melbourne dates (YYYY-MM-DD).

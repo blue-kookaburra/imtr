@@ -1,5 +1,5 @@
 import type { Disruption, LineId } from "../types";
-import { LINES, LOOP } from "../network/data";
+import { LINES } from "../network/data";
 import { findStationId } from "../network/build";
 import { melbourneDateOf, melbourneLocalToIso } from "../meltz";
 
@@ -117,32 +117,38 @@ function resolveStation(name: string): string | undefined {
   return findStationId(name.trim().toLowerCase());
 }
 
-// Melbourne CMS boilerplate for "the line runs, the ring does not". Requires a
-// loop-specific phrase: a bare "to Flinders Street" is how half of all
-// disruption text ends and must not fire this.
-const LOOP_CLOSED =
-  /\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?via\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff)/i;
-
-// Flinders Street is included so every affected line's match sequence has two
-// endpoints to span between; the three ring-only stations are the payload.
-const LOOP_SECTION = ["flinders-street", ...LOOP.ring.filter((s) => s !== "flinders-street" && s !== "southern-cross")];
-
 // "between North Melbourne, Newport and Williamstown" /
 // "from Newport to Werribee" / "between Parliament, Alamein and Box Hill".
 // Returns every station mentioned so multi-branch sections can be spanned
-// per line downstream.
+// per line downstream. Explicit sections only — a loop closure is a
+// different shape (see `loopSkippedStations` below) and is never faked as a
+// span here.
 export function sectionStations(text: string): string[] | null {
   const m = text.match(
     /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why)\b|\s+\d|$)/i
   );
-  if (m) {
-    const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
-    const ids = [...new Set(parts.map(resolveStation).filter((s): s is string => !!s))];
-    if (ids.length >= 2) return ids;
-  }
-  // No explicit section, but the text says the ring is shut.
-  if (LOOP_CLOSED.test(text)) return [...LOOP_SECTION];
-  return null;
+  if (!m) return null;
+  const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
+  const ids = [...new Set(parts.map(resolveStation).filter((s): s is string => !!s))];
+  return ids.length >= 2 ? ids : null;
+}
+
+// The three underground ring stations. Flinders Street and Southern Cross are
+// on the surface route every train uses, loop or direct, so they are never
+// skipped.
+const LOOP_SKIPPED = ["flagstaff", "melbourne-central", "parliament"];
+
+// "The line runs, the ring does not." The subject must be TRAINS — "buses run
+// direct to Flinders Street" is a whole-line bus replacement, and reading it as
+// a loop closure would report the trunk as running normally. A skip list
+// naming a single loop station is not a ring closure (that station could be
+// skipped for any number of unrelated reasons) — it only counts once all
+// three ring stations are named together, stable CMS boilerplate.
+const LOOP_CLOSED =
+  /\btrains?\b[^.]{0,60}?\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?(?:via|through)\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff,?\s+melbourne\s+central\s+and\s+parliament)|\bcity\s+loop\s+(?:is\s+)?closed\b/i;
+
+export function loopSkippedStations(text: string): string[] | null {
+  return LOOP_CLOSED.test(text) ? [...LOOP_SKIPPED] : null;
 }
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
@@ -244,6 +250,7 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
     fromStation: stations?.[0],
     toStation: stations?.[stations.length - 1],
     stations: stations ?? undefined,
+    skipsStations: loopSkippedStations(allText) ?? undefined,
     wholeLine: !stations,
     // No section found: confident whole-line only when the title doesn't
     // hint at a station section we failed to parse.
@@ -335,6 +342,7 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
         fromStation: stations?.[0],
         toStation: stations?.[stations.length - 1],
         stations: stations ?? undefined,
+        skipsStations: loopSkippedStations(row) ?? undefined,
         wholeLine: !stations,
         parsed: !!stations || wholeLineExplicit,
         startDate,

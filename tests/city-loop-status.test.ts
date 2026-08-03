@@ -91,3 +91,44 @@ describe("City Loop status", () => {
     expect(parliament.lines.filter((l) => l.status === "normal").length).toBe(8);
   });
 });
+
+describe("loop-only disruptions (skipsStations)", () => {
+  // "Trains run direct to Flinders Street and will not run via the City
+  // Loop" — the ring is out, the trunk keeps running. skipsStations names
+  // exactly the three ring stations; there is no explicit section.
+  const d = disruption({
+    lineIds: ["belgrave"],
+    stations: undefined,
+    skipsStations: ["flagstaff", "melbourne-central", "parliament"],
+    rawText: "Trains run direct to Flinders Street and will not run via the City Loop.",
+  });
+
+  it("keeps Flinders Street normal — it is not the section end of a span", () => {
+    // Defect 1: Flinders Street is always index 0 in matchSequence, so
+    // treating this as a lineSpan would wrongly call it unreachable "from
+    // beyond" and report it cut, contradicting the text.
+    const flindersSt = statusAt("flinders-street", [d]);
+    expect(flindersSt.lines.find((l) => l.lineId === "belgrave")!.status).toBe("normal");
+  });
+
+  it("keeps Southern Cross normal on a Burnley-group line during a loop closure", () => {
+    // Defect 2: Southern Cross sits inside the ring order for the
+    // belgrave/lilydale/alamein/glen-waverley group, but it is on the surface
+    // route every train uses, loop or direct, so it must never be swept in.
+    const southernCross = statusAt("southern-cross", [d]);
+    expect(southernCross.lines.find((l) => l.lineId === "belgrave")!.status).toBe("normal");
+  });
+
+  it("cuts all three named ring stations", () => {
+    for (const id of ["flagstaff", "melbourne-central", "parliament"]) {
+      const st = statusAt(id, [d]);
+      expect(st.lines.find((l) => l.lineId === "belgrave")!.status, id).toBe("cut");
+    }
+  });
+
+  it("leaves a trunk station well out on the line untouched", () => {
+    const ringwood = statusAt("ringwood", [d]);
+    expect(ringwood.lines.find((l) => l.lineId === "belgrave")!.status).toBe("normal");
+    expect(ringwood.status).toBe("normal");
+  });
+});
