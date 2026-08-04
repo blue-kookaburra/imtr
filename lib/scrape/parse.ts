@@ -174,8 +174,17 @@ const WHOLE_LINE_REPLACED_STRONG = /\bbuses\s+replace\s+trains\b|\bcoaches\s+rep
 // "will not run" is as ordinary as "do not run" here, and "replacement
 // buses" is "bus replacement" with the words reversed — all three are the
 // same claim and must reach the same verdict.
-const WHOLE_LINE_REPLACED_WEAK =
-  /\bbus\s+replacement\b|\breplacement\s+(?:buses|coaches)\b|\bno\s+trains\b|\btrains\s+(?:do|will)?\s*not\s+run\b/gi;
+//
+// "replacement buses" must be DOING something. Every article page on this
+// CMS carries a static help panel — "Travelling on replacement buses", "You
+// can't take certain items on replacement buses" — and parseArticle reads
+// the whole body, so a bare noun-phrase match turns page furniture into a
+// whole-line blackout on every article.
+const REPLACEMENT_BUSES = String.raw`\breplacement\s+(?:buses|coaches)\s+(?:operate|operating|run|running|replace|will|for)\b`;
+const WHOLE_LINE_REPLACED_WEAK = new RegExp(
+  String.raw`\bbus\s+replacement\b|${REPLACEMENT_BUSES}|\bno\s+trains\b|\btrains\s+(?:do|will)?\s*not\s+run\b`,
+  "gi"
+);
 
 // What a weak claim is talking about is decided by its own sentence, not by
 // whether a loop closure was detected elsewhere in the row. Keying off
@@ -261,8 +270,10 @@ function hashId(s: string): string {
 // "replacement buses" is the same claim as "bus replacement" with the words
 // the other way round; missing it dropped the whole row before any section or
 // loop logic ran, which is the quietest way to lose a disruption.
-const DISRUPTION_KEYWORDS =
-  /buses replace|bus replacement|replacement (?:buses|coaches)|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|closed|coaches replace|service(?:s)? (?:will )?not run/i;
+const DISRUPTION_KEYWORDS = new RegExp(
+  String.raw`buses replace|bus replacement|${REPLACEMENT_BUSES}|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|closed|coaches replace|service(?:s)? (?:will )?not run`,
+  "i"
+);
 
 // Article page URLs linked from a planned-works line page. These per-
 // disruption pages carry exact start/end timestamps the tables lack.
@@ -308,8 +319,10 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
 
   // See DISRUPTION_KEYWORDS above for why the loop-specific phrasings are
   // included: a pure loop closure never says "buses replace trains".
-  const SERVICE_GAP =
-    /buses replace|bus replacement|replacement (?:buses|coaches)|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|coaches replace|closed|start and end at/i;
+  const SERVICE_GAP = new RegExp(
+    String.raw`buses replace|bus replacement|${REPLACEMENT_BUSES}|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|coaches replace|closed|start and end at`,
+    "i"
+  );
   if (!SERVICE_GAP.test(allText)) return null;
 
   // Lines from the structured Lines map, falling back to name-matching.

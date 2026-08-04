@@ -3,8 +3,8 @@
 **Written:** 2026-08-04, at the end of the `svg-network-map` branch (SVG map redesign +
 City Loop modelling).
 
-These were each found by executing real disruption text through the real parser into the
-status layer. All five were measured as **present on `main` before this branch** — none is a
+These were found by executing real disruption text through the real parser into the
+status layer. All were measured as **present on `main` before this branch** — none is a
 regression. They are recorded here because they were expensive to find and would otherwise be
 rediscovered from scratch.
 
@@ -37,9 +37,23 @@ to be phrased weakly.
 **Addressed** — the claim's own sentence now decides, so the loop sentence beside it no
 longer swallows it.
 
-**Residual.** The rule is *negative*: a weak claim counts as whole-line when its sentence
-does not mention the loop. So a sentence that names a ring station incidentally still reads
-as loop-scoped, and with a loop closure alongside that is still a false all-clear:
+**Residual (both directions).** The rule is *negative*: a weak claim counts as whole-line
+when its sentence does not mention the loop. That manufactures blackouts as well as
+all-clears, and the doc should not record only the flattering half.
+
+*Blackout direction.* A scope the section parser can't read is promoted to a full-line
+claim once a loop sentence sits beside it: `"Trains do not run east of Ringwood. The City
+Loop is closed."` → 31 of 31 edges, where `main` gave 4. `main`'s answer was also wrong (a
+false all-clear east of Ringwood), so this trades one wrong answer for another rather than
+regressing cleanly — but it lands on the half `AGENTS.md` names first. Same shape when the
+qualifier is simply in a different sentence: `"Bus replacement is in place. This is while
+the City Loop is closed."` → 31 of 31. Sentence scoping cannot see across a full stop, and
+an unscoped weak claim beside a loop closure is genuinely ambiguous — the principled answer
+for that case is a ⚠ warning rather than either confident state, which is a larger change
+than this branch made.
+
+*All-clear direction.* A sentence that names a ring station incidentally still reads as
+loop-scoped, and with a loop closure alongside that is still a false all-clear:
 `"No trains on the Belgrave line due to works near Parliament. The City Loop is closed."`
 → 4 of 31 edges, Ringwood `normal`. Bus-stop locations are named this way routinely in
 article bodies. Closing the class needs *positive* whole-line detection — "entire line",
