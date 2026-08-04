@@ -359,4 +359,18 @@ describe("article boilerplate is not a service claim", () => {
     )!;
     expect(d.wholeLine).toBe(true);
   });
+
+  // The distinction the fix turns on: the same noun phrase is a claim when it
+  // is doing something and furniture when it is not. Both directions are
+  // pinned here so neither can drift.
+  it("reads 'replacement buses' as a claim when they are doing something", () => {
+    for (const body of [
+      "Replacement buses operate all weekend.",
+      "Replacement buses for trains run direct to Flinders Street.",
+    ]) {
+      const d = parseArticle(withBody("Replacement buses", body), URL)!;
+      expect(d, body).not.toBeNull();
+      expect(d.wholeLine, body).toBe(true);
+    }
+  });
 });
