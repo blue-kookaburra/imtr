@@ -168,12 +168,46 @@ export function loopSkippedStations(text: string): string[] | null {
 // do not run", "bus replacement") also show up in sentences that describe
 // only a City Loop ring closure ("Trains do not run via the City Loop"),
 // which must NOT black out the whole line. The strong alternatives (an
-// explicit "buses/coaches replace trains") are unambiguous and are what the
-// co-occurrence fix above actually needed, so they apply regardless of a
-// loop closure being present too. The weak alternatives only count when
-// there's no co-occurring loop closure to explain them instead.
+// explicit "buses/coaches replace trains") are unambiguous, so they always
+// mean the whole line — including alongside a loop closure.
 const WHOLE_LINE_REPLACED_STRONG = /\bbuses\s+replace\s+trains\b|\bcoaches\s+replace\s+trains\b/i;
-const WHOLE_LINE_REPLACED_WEAK = /\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do\s+)?not\s+run\b/i;
+const WHOLE_LINE_REPLACED_WEAK = /\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do|will)?\s*not\s+run\b/gi;
+
+// What a weak claim is talking about is decided by its own sentence, not by
+// whether a loop closure was detected elsewhere in the row. Keying off
+// `skipsStations` instead got this wrong in both directions: "No trains on
+// the Belgrave line. The City Loop is closed." lost the whole-line claim to
+// the loop sentence next to it, while "There are no trains through the City
+// Loop." blacked out the entire line because that phrasing isn't one
+// LOOP_CLOSED recognises, so nothing was there to suppress it.
+const LOOP_SCOPE =
+  /\bcity\s+loop\b|\bflagstaff\b|\bmelbourne\s+central\b|\bparliament\b/i;
+
+// The sentence containing `index`. Semicolons separate independent clauses in
+// this CMS's register ("Trains bypass the City Loop; no trains will stop at
+// ..."), so they bound a scope too.
+function sentenceAround(text: string, index: number): string {
+  const start = Math.max(text.lastIndexOf(".", index), text.lastIndexOf(";", index));
+  let end = text.length;
+  for (const mark of [".", ";"]) {
+    const i = text.indexOf(mark, index);
+    if (i !== -1 && i < end) end = i;
+  }
+  return text.slice(start + 1, end);
+}
+
+// True when the text claims the whole line is replaced. A weak claim counts
+// only when its own sentence is not about the City Loop — otherwise it is
+// describing the ring, which `skipsStations` already carries.
+function claimsWholeLine(text: string): boolean {
+  if (WHOLE_LINE_REPLACED_STRONG.test(text)) return true;
+  WHOLE_LINE_REPLACED_WEAK.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = WHOLE_LINE_REPLACED_WEAK.exec(text))) {
+    if (!LOOP_SCOPE.test(sentenceAround(text, m.index))) return true;
+  }
+  return false;
+}
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
   const lower = text.toLowerCase();
@@ -200,8 +234,11 @@ function hashId(s: string): string {
 // loop", "bypassing", "will not stop at") so a pure loop closure — which
 // never says "buses replace trains" — still clears this gate and reaches
 // loopSkippedStations below instead of being silently dropped.
+// "replacement buses" is the same claim as "bus replacement" with the words
+// the other way round; missing it dropped the whole row before any section or
+// loop logic ran, which is the quietest way to lose a disruption.
 const DISRUPTION_KEYWORDS =
-  /buses replace|bus replacement|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|closed|coaches replace|service(?:s)? (?:will )?not run/i;
+  /buses replace|bus replacement|replacement (?:buses|coaches)|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|closed|coaches replace|service(?:s)? (?:will )?not run/i;
 
 // Article page URLs linked from a planned-works line page. These per-
 // disruption pages carry exact start/end timestamps the tables lack.
@@ -248,7 +285,7 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
   // See DISRUPTION_KEYWORDS above for why the loop-specific phrasings are
   // included: a pure loop closure never says "buses replace trains".
   const SERVICE_GAP =
-    /buses replace|bus replacement|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|coaches replace|closed|start and end at/i;
+    /buses replace|bus replacement|replacement (?:buses|coaches)|no trains|trains? (?:do |will )?not run|bypass(?:ing|es)?|will not stop at|coaches replace|closed|start and end at/i;
   if (!SERVICE_GAP.test(allText)) return null;
 
   // Lines from the structured Lines map, falling back to name-matching.
@@ -285,12 +322,7 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
   const titleHintsUnparsedSection = /between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`);
   // Whole-line bus/coach replacement is its own claim, independent of a
   // co-occurring City Loop closure — both can be true on one disruption.
-  // Strong wording always counts; weak wording only counts when there's no
-  // loop closure already explaining it (see WHOLE_LINE_REPLACED_WEAK above).
-  const wholeLine =
-    !stations &&
-    !titleHintsUnparsedSection &&
-    (WHOLE_LINE_REPLACED_STRONG.test(allText) || (!skipsStations && WHOLE_LINE_REPLACED_WEAK.test(allText)));
+  const wholeLine = !stations && !titleHintsUnparsedSection && claimsWholeLine(allText);
 
   const base = {
     id: `art-${a.ID}`,
@@ -387,14 +419,10 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
       // "Buses replace trains." with no section text = the whole line is
       // replaced; that's a confident blackout, not a warning. This is
       // independent of a co-occurring loop closure — "Buses replace trains.
-      // The City Loop is closed." bussed the whole line AND skips the ring,
-      // and neither claim should suppress the other. Strong wording always
-      // counts; weak wording only counts absent a loop closure explaining it
-      // (see WHOLE_LINE_REPLACED_WEAK above).
+      // The City Loop is closed." busses the whole line AND skips the ring,
+      // and neither claim should suppress the other.
       const wholeLine =
-        !stations &&
-        !/\b(between|from)\b/i.test(rawText) &&
-        (WHOLE_LINE_REPLACED_STRONG.test(rawText) || (!skipsStations && WHOLE_LINE_REPLACED_WEAK.test(rawText)));
+        !stations && !/\b(between|from)\b/i.test(rawText) && claimsWholeLine(rawText);
 
       const id = hashId(`${lineIds.join(",")}|${startDate}|${endDate}|${rawText}`);
       if (out.has(id)) continue;

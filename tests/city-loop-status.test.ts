@@ -561,3 +561,85 @@ describe("weak whole-line wording must not blackout a loop-only closure (F5 regr
     expect(bussed.length).toBe(lineEdgeIds.length);
   });
 });
+
+// The three gaps recorded in docs/superpowers/plans/2026-08-04-known-gaps.md.
+// All predate the City Loop work and all sit on the fail-visible invariant:
+// two produce a false all-clear, one produces a possibly-wrong blackout.
+describe("whole-line scope detection", () => {
+  // Tuesday midday inside the 10-12 August window every row below uses.
+  const AT = new Date("2026-08-11T02:00:00Z");
+
+  function bussedCount(lineId: string, disruptions: Disruption[]) {
+    const res = computeStatus(disruptions, AT, "2026-08-04T00:00:00Z");
+    const ids = EDGES.filter((e) => e.lineId === lineId).map((e) => e.id);
+    return {
+      bussed: ids.filter((id) => res.segments.find((s) => s.edgeId === id)!.status === "bus-replacement").length,
+      total: ids.length,
+    };
+  }
+
+  // Gap 1: the weak claim is about the LINE, and a loop closure alongside it
+  // must not swallow it. Previously gave 4/31 and told a Ringwood passenger
+  // their train was running.
+  it("blacks out the line when weak wording is scoped to the line, despite a loop closure", () => {
+    const row =
+      "Belgrave Line: No trains on the Belgrave line. The City Loop is closed. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d).toHaveLength(1);
+    expect(d[0].wholeLine, "a line-scoped 'no trains' is a whole-line claim").toBe(true);
+    const { bussed, total } = bussedCount("belgrave", d);
+    expect(bussed).toBe(total);
+  });
+
+  it("blacks out the line for an unqualified weak claim beside a loop closure", () => {
+    const row =
+      "Belgrave Line: Trains do not run this weekend. The City Loop is closed. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d[0].wholeLine).toBe(true);
+    const { bussed, total } = bussedCount("belgrave", d);
+    expect(bussed).toBe(total);
+  });
+
+  // Gap 2: the weak claim is scoped to the RING, so it must not black out the
+  // line — and this must hold even though LOOP_CLOSED does not match this
+  // phrasing, so skipsStations is never set to suppress it.
+  it("does not black out the line when weak wording is scoped to the loop", () => {
+    const row =
+      "Belgrave Line: There are no trains through the City Loop. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d).toHaveLength(1);
+    expect(d[0].wholeLine, "a loop-scoped 'no trains' is not a whole-line claim").toBe(false);
+    const { bussed, total } = bussedCount("belgrave", d);
+    expect(bussed).toBeLessThan(total);
+  });
+
+  // Gap 3: the row was dropped before any section or loop logic ran, so the
+  // disruption vanished entirely — the quietest possible all-clear.
+  it("does not silently drop 'replacement buses' word order", () => {
+    const row =
+      "Belgrave Line: Replacement buses operate between Ringwood and Belgrave. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d, "the row must not be dropped by the keyword gate").toHaveLength(1);
+    expect(d[0].stations).toContain("ringwood");
+  });
+
+  // Guards against over-correcting: these must keep their existing answers.
+  it("keeps the co-occurrence case blacking out the whole line", () => {
+    const row =
+      "Belgrave Line: Buses replace trains. The City Loop is closed. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d[0].wholeLine).toBe(true);
+    expect(d[0].skipsStations).toEqual(["flagstaff", "melbourne-central", "parliament"]);
+    const { bussed, total } = bussedCount("belgrave", d);
+    expect(bussed).toBe(total);
+  });
+
+  it("keeps a plain loop closure to the ring only", () => {
+    const row =
+      "Belgrave Line: Trains do not run via the City Loop. Monday 10 August to Wednesday 12 August.";
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(d[0].wholeLine).toBe(false);
+    const { bussed } = bussedCount("belgrave", d);
+    expect(bussed).toBe(4);
+  });
+});
