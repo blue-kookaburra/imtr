@@ -171,7 +171,11 @@ export function loopSkippedStations(text: string): string[] | null {
 // explicit "buses/coaches replace trains") are unambiguous, so they always
 // mean the whole line — including alongside a loop closure.
 const WHOLE_LINE_REPLACED_STRONG = /\bbuses\s+replace\s+trains\b|\bcoaches\s+replace\s+trains\b/i;
-const WHOLE_LINE_REPLACED_WEAK = /\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do|will)?\s*not\s+run\b/gi;
+// "will not run" is as ordinary as "do not run" here, and "replacement
+// buses" is "bus replacement" with the words reversed — all three are the
+// same claim and must reach the same verdict.
+const WHOLE_LINE_REPLACED_WEAK =
+  /\bbus\s+replacement\b|\breplacement\s+(?:buses|coaches)\b|\bno\s+trains\b|\btrains\s+(?:do|will)?\s*not\s+run\b/gi;
 
 // What a weak claim is talking about is decided by its own sentence, not by
 // whether a loop closure was detected elsewhere in the row. Keying off
@@ -186,12 +190,32 @@ const LOOP_SCOPE =
 // The sentence containing `index`. Semicolons separate independent clauses in
 // this CMS's register ("Trains bypass the City Loop; no trains will stop at
 // ..."), so they bound a scope too.
+//
+// A full stop only ends a sentence when whitespace or end-of-text follows.
+// This CMS writes clock times with a dot — "9.30pm", which is every time in
+// data/disruptions.json bar one — and splitting there would cut the
+// qualifier off the claim, turning "Bus replacement after 9.30pm while the
+// City Loop is closed" into a whole-line blackout. Same rule as the rawText
+// split further down this file.
+function isSentenceEnd(text: string, i: number): boolean {
+  if (text[i] === ";") return true;
+  return text[i] === "." && (i + 1 >= text.length || /\s/.test(text[i + 1]));
+}
+
 function sentenceAround(text: string, index: number): string {
-  const start = Math.max(text.lastIndexOf(".", index), text.lastIndexOf(";", index));
+  let start = -1;
+  for (let i = index - 1; i >= 0; i--) {
+    if (isSentenceEnd(text, i)) {
+      start = i;
+      break;
+    }
+  }
   let end = text.length;
-  for (const mark of [".", ";"]) {
-    const i = text.indexOf(mark, index);
-    if (i !== -1 && i < end) end = i;
+  for (let i = index; i < text.length; i++) {
+    if (isSentenceEnd(text, i)) {
+      end = i;
+      break;
+    }
   }
   return text.slice(start + 1, end);
 }

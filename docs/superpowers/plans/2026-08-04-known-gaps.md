@@ -8,6 +8,12 @@ status layer. All five were measured as **present on `main` before this branch**
 regression. They are recorded here because they were expensive to find and would otherwise be
 rediscovered from scratch.
 
+**Update 2026-08-04, branch `parser-scope-detection`.** Gaps 1-3 are now addressed:
+whole-line scope is decided by the weak claim's own sentence rather than by whether a loop
+closure was detected elsewhere in the row, and the keyword gates accept `replacement buses`.
+Gaps 1 and 2 are closed for their exemplars but **not for their whole class** — see the
+residuals recorded under each. Gaps 4 and 5 are untouched.
+
 The project invariant they bear on is **fail-visible** (`AGENTS.md`): anything the parser
 can't confidently map renders as a line-level ⚠ warning — never a possibly-wrong blackout,
 never a false "all clear". Both halves matter, and these sit on both sides of it.
@@ -28,10 +34,17 @@ Cause: `WHOLE_LINE_REPLACED_WEAK` (`lib/scrape/parse.ts`) is deliberately suppre
 suppression is right for loop-only text and wrong for genuinely-whole-line text that happens
 to be phrased weakly.
 
-Fix direction: detect whole-line *scope* explicitly — "entire line", "all trains", "on the
-\<name\> line" — rather than inferring it from the absence of a section. Severity is moderated
-by VIC's CMS almost always writing "Buses replace trains", which is strong wording and
-unaffected.
+**Addressed** — the claim's own sentence now decides, so the loop sentence beside it no
+longer swallows it.
+
+**Residual.** The rule is *negative*: a weak claim counts as whole-line when its sentence
+does not mention the loop. So a sentence that names a ring station incidentally still reads
+as loop-scoped, and with a loop closure alongside that is still a false all-clear:
+`"No trains on the Belgrave line due to works near Parliament. The City Loop is closed."`
+→ 4 of 31 edges, Ringwood `normal`. Bus-stop locations are named this way routinely in
+article bodies. Closing the class needs *positive* whole-line detection — "entire line",
+"all trains", "on the \<name\> line" — instead of inferring it from the absence of a loop
+mention.
 
 ## 2. `"no trains through the City Loop"` blacks out the whole line
 
@@ -45,8 +58,13 @@ Cause: `LOOP_CLOSED` matches `not run through the city loop` but not `no trains 
 city loop`. The weak-alternative guard is only ever as good as `LOOP_CLOSED`'s phrasing
 coverage, so every phrasing it misses is a potential blackout rather than a quiet miss.
 
-Fix direction: widen `LOOP_CLOSED`, or invert the relationship so loop-scoped text is
-recognised as loop-scoped before the whole-line question is asked at all.
+**Addressed** — the weak claim is now suppressed by its own sentence mentioning the loop,
+which does not depend on `LOOP_CLOSED` recognising the phrasing.
+
+**Residual.** The row lands on a line-level ⚠ warning rather than on a ring closure, because
+`LOOP_CLOSED` still does not match `no trains through the City Loop`, so `skipsStations` is
+never set and the three ring stations are not marked. That is the fail-visible-safe
+direction, but it is less than the text supports.
 
 ## 3. `"Replacement buses ..."` parses to no disruption at all
 
@@ -56,8 +74,9 @@ recognised as loop-scoped before the whole-line question is asked at all.
 `bus replacement` but not `replacement buses`. The row is dropped before any loop or section
 logic runs. **Silent all-clear.**
 
-Fix direction: add the inverted word order to both gates. Cheap; the reason it wasn't done
-during the City Loop work is that the gates predate it and the fix was scoped narrowly.
+**Addressed** — `replacement (buses|coaches)` was added to both gates and to the weak
+whole-line alternatives, so the row survives and reaches the same verdict as the
+`bus replacement` word order.
 
 ## 4. Map has no screen-reader accessibility
 
@@ -76,3 +95,16 @@ Belgrave focused, tapping the Belgrave-coloured ring lane opens a Frankston shee
 
 Pre-existing — trunk edges were already stacked 4 deep before the City Loop added a fifth.
 Cheap fix: prefer the focused line's edge in `NetworkMap`'s `handleEdge`.
+
+## 6. A trailing time phrase can lose an otherwise valid section
+
+`"Buses replace trains between Ringwood and Belgrave from 9.30pm."`
+
+→ `parsed: false`, so the whole line gets a ⚠ warning instead of the Ringwood–Belgrave
+section it names. `sectionStations`' `(?:between|from)` alternation lets the second `from`
+compete with the first, and the trailing clock time defeats the station-name character
+class.
+
+Measured identical on `main` and on `parser-scope-detection` — pre-existing, found while
+verifying that branch. Fail-visible-safe (a warning, not a wrong claim), but it discards
+information the text clearly carries, and "between X and Y from 9.30pm" is ordinary wording.

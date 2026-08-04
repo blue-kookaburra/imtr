@@ -643,3 +643,52 @@ describe("whole-line scope detection", () => {
     expect(bussed).toBe(4);
   });
 });
+
+describe("sentence scope is robust to CMS punctuation", () => {
+  // 22:00 Melbourne — inside the "after 9.30pm" window the rows below use, so
+  // the disruption is actually live when the status is computed.
+  const AT = new Date("2026-08-11T12:00:00Z");
+
+  function bussed(lineId: string, row: string) {
+    const d = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    if (!d.length) return { n: 0, total: 0, whole: undefined as boolean | undefined };
+    const res = computeStatus(d, AT, "2026-08-04T00:00:00Z");
+    const ids = EDGES.filter((e) => e.lineId === lineId).map((e) => e.id);
+    return {
+      n: ids.filter((id) => res.segments.find((s) => s.edgeId === id)!.status === "bus-replacement").length,
+      total: ids.length,
+      whole: d[0].wholeLine,
+    };
+  }
+
+  // This CMS writes clock times with a full stop ("9.30pm" — every time in
+  // data/disruptions.json bar one). Treating that dot as a sentence end cuts
+  // the qualifier off the claim and turns a ring closure into a line blackout.
+  it("does not let a dotted clock time split the scope sentence", () => {
+    const r = bussed("belgrave", "Belgrave Line: Bus replacement after 9.30pm while the City Loop is closed. Monday 10 August to Wednesday 12 August.");
+    expect(r.whole, "the loop qualifier survives the dotted time").toBe(false);
+    expect(r.n).toBe(4);
+  });
+
+  it("agrees with the colon-time spelling of the same row", () => {
+    const dotted = bussed("belgrave", "Belgrave Line: Bus replacement after 9.30pm while the City Loop is closed. Monday 10 August to Wednesday 12 August.");
+    const colon = bussed("belgrave", "Belgrave Line: Bus replacement after 9:30pm while the City Loop is closed. Monday 10 August to Wednesday 12 August.");
+    expect(dotted).toEqual(colon);
+  });
+
+  // "will not run" is as ordinary as "do not run" in this CMS, and a
+  // line-scoped one is a whole-line claim like any other.
+  it("treats 'will not run' on the line as a whole-line claim", () => {
+    const r = bussed("belgrave", "Belgrave Line: Trains will not run on the Belgrave line. Monday 10 August to Wednesday 12 August.");
+    expect(r.whole).toBe(true);
+    expect(r.n).toBe(r.total);
+  });
+
+  // Same claim as "bus replacement", words reversed — it must reach the same
+  // verdict rather than quietly degrading to a warning.
+  it("reads 'replacement buses' the same way as 'bus replacement'", () => {
+    const reversed = bussed("belgrave", "Belgrave Line: Replacement buses operate on the entire Belgrave line. Monday 10 August to Wednesday 12 August.");
+    expect(reversed.whole).toBe(true);
+    expect(reversed.n).toBe(reversed.total);
+  });
+});
