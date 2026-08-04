@@ -1,7 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { extractArticleUrls, extractTableHtml, parseArticle, parsePage, tableRows } from "@/lib/scrape/parse";
+import {
+  extractArticleUrls,
+  extractTableHtml,
+  parseArticle,
+  parsePage,
+  tableRows,
+  sectionStations,
+  loopSkippedStations,
+} from "@/lib/scrape/parse";
 import { computeStatus, computeCalendar } from "@/lib/status";
 import { EDGES, STATIONS, edgesBetween } from "@/lib/network/build";
 
@@ -70,7 +78,7 @@ describe("parser row formats", () => {
     );
     expect(ds).toHaveLength(1);
     expect(ds[0].lineIds.sort()).toEqual(["alamein", "belgrave", "lilydale"]);
-    expect(ds[0].stations).toContain("flinders-street"); // Parliament aliased to city
+    expect(ds[0].stations).toContain("parliament"); // Parliament is a City Loop station
     expect(ds[0].stations).toContain("box-hill");
     expect(ds[0].startMin).toBe(18 * 60); // "evening trains"
   });
@@ -197,5 +205,106 @@ describe("calendar", () => {
   it("beyond horizon shows no-data", () => {
     const days = computeCalendar("yarraville", ds, "2026-09-01", "2026-09-03", REF.toISOString(), "2026-08-22");
     expect(days.every((d) => d.status === "no-data")).toBe(true);
+  });
+});
+
+describe("City Loop station names", () => {
+  it("resolves loop stations as themselves, not as Flinders Street", () => {
+    const ids = sectionStations(
+      "Buses replace evening trains between Parliament, Alamein and Box Hill."
+    );
+    expect(ids).toContain("parliament");
+    expect(ids).not.toContain("flinders-street");
+  });
+
+  it("resolves Melbourne Central and Flagstaff", () => {
+    const ids = sectionStations("Buses replace trains between Flagstaff and Melbourne Central.");
+    expect(ids?.slice().sort()).toEqual(["flagstaff", "melbourne-central"]);
+  });
+});
+
+describe("loop closures", () => {
+  // A loop closure is "these three stations are skipped", never a section
+  // spanning min..max of some indices — sectionStations stays section-only.
+  it("does not read a loop phrase as an explicit section", () => {
+    const ids = sectionStations(
+      "Trains run direct to Flinders Street and will not run via the City Loop."
+    );
+    expect(ids).toBeNull();
+  });
+
+  it("reads 'run direct to Flinders Street' as the ring being out", () => {
+    const skipped = loopSkippedStations(
+      "Trains run direct to Flinders Street and will not run via the City Loop."
+    );
+    expect(skipped?.slice().sort()).toEqual(["flagstaff", "melbourne-central", "parliament"].sort());
+  });
+
+  it("recognizes 'City Loop is closed' and 'not run through the City Loop'", () => {
+    expect(loopSkippedStations("The City Loop is closed for maintenance.")).not.toBeNull();
+    expect(loopSkippedStations("Trains will not run through the City Loop.")).not.toBeNull();
+  });
+
+  it("reads an explicit skip list naming all three ring stations", () => {
+    const skipped = loopSkippedStations(
+      "Trains will not stop at Flagstaff, Melbourne Central and Parliament."
+    );
+    expect(skipped).toContain("flagstaff");
+    expect(skipped).toContain("parliament");
+  });
+
+  it("does not treat one named station as a ring closure", () => {
+    // A single station being skipped is not "the ring is shut" — could be any
+    // unrelated reason.
+    expect(loopSkippedStations("Trains will not stop at Flagstaff this weekend.")).toBeNull();
+  });
+
+  it("does not fire on a whole-line bus replacement phrased the same way", () => {
+    // The subject must be TRAINS. "Buses run direct to Flinders Street" is a
+    // whole-line bus replacement; reading it as a loop closure would leave
+    // wholeLine untouched and report the (bus-replaced) trunk as normal — a
+    // false all-clear.
+    expect(loopSkippedStations("Buses run direct to Flinders Street Station.")).toBeNull();
+  });
+
+  it("does not fire when 'trains' is the OBJECT of a replacement, not the subject of 'run'", () => {
+    // These four all put "trains" right before "run direct to Flinders
+    // Street" without "trains" ever being the thing doing the running — a
+    // review round found the previous subject guard couldn't tell the
+    // difference when the two clauses shared one sentence (no full stop to
+    // block the {0,60} reach).
+    expect(loopSkippedStations("Buses replace trains and run direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Coaches replace trains and run direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Buses replace trains, running direct to Flinders Street.")).toBeNull();
+    expect(loopSkippedStations("Replacement buses for trains run direct to Flinders Street.")).toBeNull();
+    // The correctly-punctuated version (two sentences) still reads as not a
+    // loop closure either — the regression this all started from.
+    expect(loopSkippedStations("Buses replace trains. Buses run direct to Flinders Street.")).toBeNull();
+  });
+
+  it("keeps sectionStations reporting only the named section when both signals are present", () => {
+    // Both signals present: sectionStations reports only the explicit
+    // section; loopSkippedStations independently picks up the loop mention.
+    const ids = sectionStations(
+      "Buses replace trains between Ringwood and Belgrave. Other trains run direct to Flinders Street."
+    );
+    expect(ids?.slice().sort()).toEqual(["belgrave", "ringwood"].sort());
+  });
+
+  it("does not fire on ordinary city-bound wording", () => {
+    // "to Flinders Street" alone is how half of all disruption text ends, and
+    // this one is already a well-formed section.
+    const text = "Buses replace trains from Ringwood to Flinders Street.";
+    const ids = sectionStations(text);
+    expect(ids).not.toContain("flagstaff");
+    expect(ids?.slice().sort()).toEqual(["flinders-street", "ringwood"].sort());
+    expect(loopSkippedStations(text)).toBeNull();
+  });
+
+  it("still declines to guess on text with no section and no loop phrase", () => {
+    expect(sectionStations("Major works affecting services. Check before you travel.")).toBeNull();
+    expect(sectionStations("Trains may be delayed up to 20 minutes.")).toBeNull();
+    expect(loopSkippedStations("Major works affecting services. Check before you travel.")).toBeNull();
+    expect(loopSkippedStations("Trains may be delayed up to 20 minutes.")).toBeNull();
   });
 });

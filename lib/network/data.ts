@@ -1,4 +1,4 @@
-import type { LineDef } from "../types";
+import type { LineDef, LineId } from "../types";
 
 // Schematic coordinate system: x right, y down, roughly 1 unit per
 // couple of stations. Scaled up when rendered to SVG.
@@ -399,11 +399,46 @@ export const NAME_OVERRIDES: Record<string, string> = {
   anzac: "Anzac",
 };
 
-// City Loop ring stations (drawn as a shared ring, not per-line edges).
-export const CITY_LOOP = [
-  "flinders-street",
-  "southern-cross",
-  "flagstaff",
-  "melbourne-central",
-  "parliament",
-];
+export interface LoopGroup {
+  color: string;
+  lines: LineId[];
+  // Loop stations in travel order OUTBOUND from Flinders Street — the order a
+  // train leaving Flinders Street via the loop calls at them. Northern runs the
+  // ring the other way round from the rest, which is why this is per-group.
+  order: string[];
+  // Trunk station where this group's loop rejoins its own line.
+  portal: string;
+}
+
+// The City Loop is an overlay, not a line: it is deliberately NOT spliced into
+// the LINES arrays above, because extract_map.py, the geometry build, the map
+// edge ids and the scraper's station matching all key off those arrays.
+export const LOOP: { ring: string[]; groups: LoopGroup[] } = {
+  ring: ["flinders-street", "southern-cross", "flagstaff", "melbourne-central", "parliament"],
+  groups: [
+    {
+      color: YELLOW,
+      lines: ["craigieburn", "upfield"],
+      order: ["parliament", "melbourne-central", "flagstaff"],
+      portal: "north-melbourne",
+    },
+    {
+      color: RED,
+      lines: ["mernda", "hurstbridge"],
+      order: ["southern-cross", "flagstaff", "melbourne-central", "parliament"],
+      portal: "jolimont",
+    },
+    {
+      color: NAVY,
+      lines: ["belgrave", "lilydale", "alamein", "glen-waverley"],
+      order: ["southern-cross", "flagstaff", "melbourne-central", "parliament"],
+      portal: "richmond",
+    },
+    {
+      color: GREEN,
+      lines: ["frankston"],
+      order: ["southern-cross", "flagstaff", "melbourne-central", "parliament"],
+      portal: "richmond",
+    },
+  ],
+};

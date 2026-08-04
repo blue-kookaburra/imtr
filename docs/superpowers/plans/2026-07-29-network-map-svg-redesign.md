@@ -82,9 +82,7 @@ Create `tests/map-geometry.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
-import { MAP_W, MAP_H, STATION_XY, EDGE_PATH, ORPHAN_STATIONS } from "@/lib/map/geometry";
-
-const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+import { MAP_W, MAP_H, EDGE_PATH, ORPHAN_STATIONS, SNAP_DISTANCE } from "@/lib/map/geometry";
 
 describe("map geometry", () => {
   it("uses the extracted map's pixel space", () => {
@@ -99,21 +97,22 @@ describe("map geometry", () => {
     }
   });
 
-  it("lands every polyline endpoint on its station", () => {
-    const bad: string[] = [];
-    for (const e of EDGES) {
-      const pts = EDGE_PATH[e.id];
-      const A = STATION_XY[e.from];
-      const B = STATION_XY[e.to];
-      const fwd = dist(pts[0], A) + dist(pts[pts.length - 1], B);
-      const rev = dist(pts[0], B) + dist(pts[pts.length - 1], A);
-      const [d0, d1] =
-        fwd <= rev
-          ? [dist(pts[0], A), dist(pts[pts.length - 1], B)]
-          : [dist(pts[0], B), dist(pts[pts.length - 1], A)];
-      if (d0 > 25 || d1 > 25) bad.push(`${e.id} (${d0.toFixed(0)}, ${d1.toFixed(0)})`);
-    }
+  it("never has to drag a polyline far to reach its station", () => {
+    // The build snaps each polyline's ends onto its station, so asserting on
+    // the *output* endpoints would be vacuously true. Assert on how far the
+    // snap had to reach: a short reach is the parallel-lane tick the poster
+    // itself draws; a long one means the polyline was routed somewhere else
+    // entirely and the snap papered over it with a straight teleport.
+    const bad = Object.entries(SNAP_DISTANCE)
+      .filter(([, d]) => d > 25)
+      .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
     expect(bad).toEqual([]);
+  });
+
+  it("records a snap distance for every edge", () => {
+    for (const e of EDGES) {
+      expect(SNAP_DISTANCE[e.id], `no snap distance for ${e.id}`).toBeTypeOf("number");
+    }
   });
 
   it("pins the known orphan stations", () => {
@@ -209,19 +208,25 @@ function perpendicularDistance(p: XY, a: XY, b: XY): number {
 // The poster draws parallel lines side by side, so a line's lane often stops
 // short of the shared station dot. Appending the station coordinate draws the
 // same interchange tick the poster uses.
-function snapEnds(pts: XY[], from: XY, to: XY): XY[] {
+// Returns the snapped polyline and how far the snap had to reach — the reach
+// is the only evidence left afterwards that the polyline didn't already go
+// where it claimed, so it is recorded and asserted on.
+function snapEnds(pts: XY[], from: XY, to: XY): { pts: XY[]; reach: number } {
   const fwd = dist(pts[0], from) + dist(pts[pts.length - 1], to);
   const rev = dist(pts[0], to) + dist(pts[pts.length - 1], from);
   const [head, tail] = fwd <= rev ? [from, to] : [to, from];
   const out = pts.map((p) => [p[0], p[1]] as XY);
-  if (dist(out[0], head) > 2) out.unshift(head);
-  if (dist(out[out.length - 1], tail) > 2) out.push(tail);
-  return out;
+  const headReach = dist(out[0], head);
+  const tailReach = dist(out[out.length - 1], tail);
+  if (headReach > 2) out.unshift(head);
+  if (tailReach > 2) out.push(tail);
+  return { pts: out, reach: Math.max(headReach, tailReach) };
 }
 
 function build() {
   const stations = extracted.stations;
   const edges: Record<string, XY[]> = {};
+  const snapped: Record<string, number> = {};
   const rendered = new Set<string>();
   const missing: string[] = [];
 
@@ -239,7 +244,9 @@ function build() {
     }
     // Hand-authored polylines are authored to land on their stations already,
     // but snapping them is harmless and keeps one code path.
-    edges[e.id] = simplify(snapEnds(raw, from, to), 1.5);
+    const snap = snapEnds(raw, from, to);
+    edges[e.id] = simplify(snap.pts, 1.5);
+    snapped[e.id] = Number(snap.reach.toFixed(1));
     rendered.add(e.from);
     rendered.add(e.to);
   }
@@ -257,16 +264,24 @@ function build() {
     height: extracted.height,
     stations,
     edges,
+    snapped,
     rendered: [...rendered].sort(),
     orphans,
   };
   writeFileSync(join(ROOT, "data/map-geometry.json"), JSON.stringify(out) + "\n");
 
   const pointCount = Object.values(edges).reduce((n, p) => n + p.length, 0);
+  const farSnaps = Object.entries(snapped)
+    .filter(([, d]) => d > 25)
+    .sort((a, b) => b[1] - a[1]);
   console.log(
     `map-geometry.json: ${Object.keys(edges).length} edges, ${pointCount} points, ` +
       `${rendered.size} rendered stations, ${orphans.length} orphans (${orphans.join(", ")})`
   );
+  if (farSnaps.length) {
+    console.log(`  ${farSnaps.length} edge(s) snapped more than 25px — these need hand routing:`);
+    for (const [id, d] of farSnaps) console.log(`    ${id}  ${d}px`);
+  }
 }
 
 build();
@@ -286,6 +301,11 @@ export const MAP_W = geometry.width as number;
 export const MAP_H = geometry.height as number;
 export const STATION_XY = geometry.stations as unknown as Record<string, XY>;
 export const EDGE_PATH = geometry.edges as unknown as Record<string, XY[]>;
+
+// How far the build had to drag each polyline's ends to reach its stations.
+// Small = the parallel-lane tick the poster draws. Large = the polyline was
+// routed somewhere else and needs a hand-authored replacement.
+export const SNAP_DISTANCE = geometry.snapped as unknown as Record<string, number>;
 
 // Stations that belong to at least one edge, so can be drawn and given a status.
 export const RENDERED_STATIONS: ReadonlySet<string> = new Set(geometry.rendered as string[]);
@@ -318,7 +338,7 @@ The endpoint test will still fail for the 4 mis-routed edges — that is expecte
 - [ ] **Step 8: Run the tests**
 
 Run: `npx vitest run tests/map-geometry.test.ts`
-Expected: the pixel-space, polyline-exists, orphan and simplification tests PASS. The endpoint test FAILS listing exactly these four:
+Expected: the pixel-space, polyline-exists, orphan, snap-recorded and simplification tests PASS. The snap-reach test FAILS listing exactly these four:
 
 ```
 frankston:flinders-street-richmond
@@ -343,105 +363,225 @@ endpoint test; hand polylines follow."
 
 ---
 
-### Task 2: Hand-route the four Richmond edges
+### Task 2: Repair the mis-routed geometry
 
-The only hand-drawing in the whole plan. Frankston and Sandringham both run Flinders Street → Richmond → South Yarra, but the extractor routed them straight down the Caulfield corridor, missing Richmond by 336 px and 317 px.
+Task 1's snap-reach test exposed more damage than the raster let anyone see: 27 edges need
+the build to drag a polyline more than 25 px to reach its station. Investigation split them
+into three groups.
+
+**Two station coordinates are simply wrong.** The extractor anchors each station to its
+OCR'd *label*, and twice that landed off the artwork:
+
+- `footscray` was given `[1107.1, 974.5]` — **byte-identical to `west-footscray`**. Two
+  different stations share one point. Measured against the poster, Footscray's interchange
+  oval is at `[1280, 985]`. The consequence is not cosmetic: `sunbury:footscray-middle-footscray`
+  is currently drawn as *West* Footscray↔Middle Footscray, and Werribee/Williamstown appear
+  to bypass Footscray entirely, running South Kensington straight to Seddon.
+- `canterbury` sits at `[2345.9, 1084.7]`, 42 px off its own line, so it renders as a
+  dead-end spur hanging off the Belgrave/Lilydale trunk. Its tick on the artwork is at
+  `[2313, 1067]`, collinear with the East Camberwell and Chatham ticks.
+
+**Nine edges are mis-routed** and need hand polylines: the four Richmond ones, the four
+Footscray ones, and `frankston:south-yarra-hawksburn`, whose polyline spikes 80 px north to
+`[1893, 1343]` and back.
+
+**Fourteen are genuine parallel-lane ticks.** The poster bundles lines into parallel lanes
+beside a shared station dot, so each lane legitimately stops 43–71 px short and the snap
+draws the connector the poster itself draws. These are accepted by name, with their measured
+reach recorded, rather than by loosening the threshold for everything.
+
+Poster lane measurements used below, at Footscray: cyan lane `y = 975`, pink lane `y = 1000`,
+interchange oval centre `[1280, 985]`.
 
 **Files:**
-- Modify: `data/map-overrides.json`
+- Modify: `data/map-overrides.json` (adds a `stations` block and 9 edge polylines)
+- Modify: `scripts/build_map_geometry.ts` (merge `overrides.stations`)
+- Modify: `tests/map-geometry.test.ts` (accepted-lane-tick allowlist)
 - Regenerate: `data/map-geometry.json`
-- Test: `tests/map-geometry.test.ts` (already written in Task 1)
 
 **Interfaces:**
-- Consumes: `data/map-overrides.json` `edges` block, read by `scripts/build_map_geometry.ts`.
-- Produces: nothing new. Makes Task 1's endpoint test pass.
+- Consumes: `SNAP_DISTANCE` from `lib/map/geometry.ts` (Task 1).
+- Produces: `data/map-overrides.json` gains `{ stations: Record<string, [number, number]>, edges: ... }`. No new exports.
 
-- [ ] **Step 1: Confirm the test still fails on exactly four edges**
+- [ ] **Step 1: Confirm the starting state**
 
-Run: `npx vitest run tests/map-geometry.test.ts -t "lands every polyline endpoint"`
-Expected: FAIL listing the four `frankston:` / `sandringham:` edges.
+Run: `npx vitest run tests/map-geometry.test.ts -t "never has to drag a polyline far"`
+Expected: FAIL listing 27 edges.
 
-- [ ] **Step 2: Write the hand polylines**
+- [ ] **Step 2: Let overrides correct station coordinates**
 
-Both lines leave Flinders Street eastward, curve up to Richmond, then drop south-east to South Yarra. The two run as parallel lanes, so Sandringham is offset 14 px south of Frankston through the shared stretch. Replace the contents of `data/map-overrides.json`:
+In `scripts/build_map_geometry.ts`, change the overrides type and the `stations` binding so a
+station coordinate can be corrected the same way a polyline can:
+
+```ts
+const overrides = JSON.parse(readFileSync(join(ROOT, "data/map-overrides.json"), "utf-8")) as {
+  stations?: Record<string, XY>;
+  edges: Record<string, XY[]>;
+};
+```
+
+Then inside `build()`, replace `const stations = extracted.stations;` with:
+
+```ts
+  // The extractor anchors each station to its OCR'd label, which occasionally
+  // lands off the artwork — or, for Footscray, exactly on top of another
+  // station. Overrides correct those by hand.
+  const stations: Record<string, XY> = { ...extracted.stations, ...(overrides.stations ?? {}) };
+```
+
+- [ ] **Step 3: Write the overrides**
+
+Replace `data/map-overrides.json` with the following. Keep the 6 `sunbury:` Metro Tunnel
+entries already in the file — they are Task 1's work and are still needed; append the new
+edges alongside them and add the `stations` block.
 
 ```json
 {
+  "stations": {
+    "footscray": [1280, 985],
+    "canterbury": [2313, 1067]
+  },
   "edges": {
+    "werribee:south-kensington-footscray": [
+      [1382.7, 1002.8], [1300, 1002], [1280, 1000], [1280, 985]
+    ],
+    "williamstown:south-kensington-footscray": [
+      [1382.7, 1002.8], [1300, 1002], [1280, 1000], [1280, 985]
+    ],
+    "werribee:footscray-seddon": [
+      [1280, 985], [1280, 1000], [1240, 1004], [1222, 1015], [1196, 1041], [1176.9, 1060.5]
+    ],
+    "williamstown:footscray-seddon": [
+      [1280, 985], [1280, 1000], [1240, 1004], [1222, 1015], [1196, 1041], [1176.9, 1060.5]
+    ],
+    "sunbury:arden-footscray": [
+      [1542, 955], [1409, 956], [1380, 973], [1371, 974], [1280, 975], [1280, 985]
+    ],
+    "pakenham:footscray-arden": [
+      [1280, 985], [1280, 975], [1371, 974], [1380, 973], [1409, 956], [1542, 955]
+    ],
+    "cranbourne:footscray-arden": [
+      [1280, 985], [1280, 975], [1371, 974], [1380, 973], [1409, 956], [1542, 955]
+    ],
+    "sunbury:footscray-middle-footscray": [
+      [1280, 985], [1280, 975], [1198, 974]
+    ],
+    "frankston:south-yarra-hawksburn": [
+      [1870.4, 1423.6], [1900, 1424], [1935, 1422], [1970.3, 1420.4]
+    ],
     "frankston:flinders-street-richmond": [
-      [1679.9, 1305],
-      [1760, 1300],
-      [1830, 1291],
-      [1900, 1275],
-      [1975, 1256],
-      [2050, 1238],
-      [2110, 1226],
-      [2153.4, 1217.9]
+      [1679.9, 1305], [1760, 1300], [1830, 1291], [1900, 1275], [1975, 1256],
+      [2050, 1238], [2110, 1226], [2153.4, 1217.9]
     ],
     "frankston:richmond-south-yarra": [
-      [2153.4, 1217.9],
-      [2120, 1244],
-      [2075, 1281],
-      [2030, 1318],
-      [1985, 1355],
-      [1940, 1389],
-      [1900, 1412],
-      [1870.4, 1423.6]
+      [2153.4, 1217.9], [2120, 1244], [2075, 1281], [2030, 1318], [1985, 1355],
+      [1940, 1389], [1900, 1412], [1870.4, 1423.6]
     ],
     "sandringham:flinders-street-richmond": [
-      [1679.9, 1305],
-      [1760, 1314],
-      [1830, 1305],
-      [1900, 1289],
-      [1975, 1270],
-      [2050, 1252],
-      [2110, 1240],
-      [2153.4, 1217.9]
+      [1679.9, 1305], [1760, 1314], [1830, 1305], [1900, 1289], [1975, 1270],
+      [2050, 1252], [2110, 1240], [2153.4, 1217.9]
     ],
     "sandringham:richmond-south-yarra": [
-      [2153.4, 1217.9],
-      [2134, 1258],
-      [2089, 1295],
-      [2044, 1332],
-      [1999, 1369],
-      [1954, 1403],
-      [1910, 1424],
-      [1870.4, 1423.6]
+      [2153.4, 1217.9], [2134, 1258], [2089, 1295], [2044, 1332], [1999, 1369],
+      [1954, 1403], [1910, 1424], [1870.4, 1423.6]
     ]
   }
 }
 ```
 
-- [ ] **Step 3: Regenerate and test**
+- [ ] **Step 4: Accept the fourteen lane ticks by name**
+
+In `tests/map-geometry.test.ts`, add above the describe block:
+
+```ts
+// Reaches beyond the 25px snap budget that have been looked at and accepted.
+// Each is a parallel-lane tick: the poster bundles these lines into lanes
+// running beside the shared station dot, so the snap draws exactly the short
+// connector the poster itself draws. Verified by rendering the CBD at 1:1.
+// Any edge NOT listed here must stay under 25px — a long reach elsewhere means
+// the polyline was routed somewhere else and the snap papered over it with a
+// straight teleport. Values are the measured reach; the test allows 2px of
+// drift so a tick cannot silently grow into a teleport.
+const ACCEPTED_LANE_TICKS: Record<string, number> = {
+  "belgrave:flinders-street-richmond": 42.8,
+  "lilydale:flinders-street-richmond": 42.8,
+  "alamein:flinders-street-richmond": 42.8,
+  "glen-waverley:flinders-street-richmond": 42.8,
+  "mernda:flinders-street-jolimont": 57.4,
+  "hurstbridge:flinders-street-jolimont": 57.4,
+  "craigieburn:flinders-street-southern-cross": 71.2,
+  "upfield:flinders-street-southern-cross": 71.2,
+  "craigieburn:southern-cross-north-melbourne": 71.2,
+  "upfield:southern-cross-north-melbourne": 71.2,
+  "werribee:southern-cross-north-melbourne": 49.1,
+  "williamstown:southern-cross-north-melbourne": 49.1,
+  "werribee:north-melbourne-south-kensington": 49.1,
+  "williamstown:north-melbourne-south-kensington": 49.1,
+};
+```
+
+Replace the body of the "never has to drag a polyline far to reach its station" test with:
+
+```ts
+    const bad = Object.entries(SNAP_DISTANCE)
+      .filter(([id, d]) => d > (ACCEPTED_LANE_TICKS[id] ?? 0) + 2 && d > 25)
+      .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
+    expect(bad).toEqual([]);
+```
+
+Add a test that the allowlist cannot rot:
+
+```ts
+  it("has no stale entries in the accepted-lane-tick list", () => {
+    const stale = Object.keys(ACCEPTED_LANE_TICKS).filter(
+      (id) => (SNAP_DISTANCE[id] ?? 0) <= 25
+    );
+    expect(stale, "these edges no longer need an exemption — remove them").toEqual([]);
+  });
+```
+
+- [ ] **Step 5: Regenerate and test**
 
 Run: `npm run map:build && npx vitest run tests/map-geometry.test.ts`
-Expected: all five tests PASS.
+Expected: all tests PASS. The build's "snapped more than 25px" summary should now list only
+the 14 accepted lane ticks.
 
-- [ ] **Step 4: Check it visually**
+If any edge outside the allowlist still exceeds 25 px, do not add it to the allowlist —
+report it. The allowlist is for ticks that have been looked at, not a place to silence
+failures.
 
-There is no rendered map yet, so verify with a throwaway render. Run:
+- [ ] **Step 6: Check the repairs visually**
+
+The map is not rendered yet, so verify numerically:
 
 ```bash
 node -e "
 const g=require('./data/map-geometry.json');
-for (const id of ['frankston:flinders-street-richmond','frankston:richmond-south-yarra','sandringham:flinders-street-richmond','sandringham:richmond-south-yarra']) {
-  const p=g.edges[id];
-  console.log(id, 'start', p[0], 'end', p.at(-1), 'points', p.length);
+console.log('footscray', g.stations['footscray'], 'west-footscray', g.stations['west-footscray']);
+console.log('canterbury', g.stations['canterbury']);
+for (const id of ['werribee:footscray-seddon','sunbury:footscray-middle-footscray','frankston:richmond-south-yarra','frankston:south-yarra-hawksburn']) {
+  console.log(id, 'reach', g.snapped[id], 'pts', g.edges[id].length);
 }
 "
 ```
 
-Expected: each starts and ends exactly on `[1679.9, 1305]`, `[2153.4, 1217.9]` or `[1870.4, 1423.6]`. If a later task's rendered map shows these four crossing other lines awkwardly, adjust the interior points here and rerun `npm run map:build` — that is the intended workflow, and it is why the overrides live in their own file.
+Expected: `footscray` and `west-footscray` are now **different** points; `canterbury` is
+`[2313, 1067]`; every listed edge has a reach at or near 0.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add data/map-overrides.json data/map-geometry.json
-git commit -m "Hand-route Frankston and Sandringham through Richmond
+git add data/map-overrides.json scripts/build_map_geometry.ts data/map-geometry.json tests/map-geometry.test.ts
+git commit -m "Repair mis-routed map geometry and two wrong station coordinates
 
-The extractor routed both down the direct Caulfield corridor, missing Richmond
-by 336px and 317px. Overrides run them Flinders -> Richmond -> South Yarra as
-parallel lanes. All 289 edges now land on their stations."
+The snap-reach test exposed damage the raster was hiding. Footscray had
+west-footscray's exact coordinate, so the Sunbury line's Footscray-Middle
+Footscray edge was really West Footscray-Middle Footscray, and Werribee and
+Williamstown appeared to skip Footscray altogether. Canterbury sat 42px off
+its own line and rendered as a dead-end spur. Both are corrected against the
+poster, nine mis-routed edges get hand polylines, and the fourteen genuine
+parallel-lane ticks are accepted by name with their measured reach rather
+than by loosening the threshold."
 ```
 
 ---
@@ -677,6 +817,7 @@ Create `tests/station-status.test.ts`:
 ```ts
 import { describe, it, expect } from "vitest";
 import { computeStatus } from "@/lib/status";
+import { STATIONS } from "@/lib/network/build";
 import type { Disruption } from "@/lib/types";
 
 // A Wednesday midday in Melbourne — every line is inside timetabled hours,
@@ -774,16 +915,99 @@ describe("per-station status", () => {
       AT,
       UPDATED
     );
-    // Richmond is warning on Frankston and boundary on Sandringham; the
-    // stronger signal wins overall.
-    expect(stationStatus(res, "hampton")!.status).toBe("cut");
+    // South Yarra is on both lines: warning on Frankston (unparseable) and cut
+    // on Sandringham (inside richmond..brighton-beach). The stronger wins.
+    const sy = stationStatus(res, "south-yarra")!;
+    expect(sy.status).toBe("cut");
+    expect(sy.lines.find((l) => l.lineId === "frankston")!.status).toBe("warning");
+    expect(sy.lines.find((l) => l.lineId === "sandringham")!.status).toBe("cut");
   });
 
-  it("emits a status for every rendered station and no orphans", () => {
+  it("cuts a section end that is also the line terminus", () => {
+    // Buses between Ringwood and Belgrave. Belgrave is the end of the line, so
+    // there is no far side for a train to arrive from — every service to it is
+    // replaced. Calling that "trains terminate here" would be a false all-clear.
+    const res = computeStatus(
+      [
+        disruption({
+          lineIds: ["belgrave"],
+          stations: ["ringwood", "belgrave"],
+          fromStation: "ringwood",
+          toStation: "belgrave",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "belgrave")!.status).toBe("cut");
+    // Ringwood does have a far side, so it really is a terminating point.
+    expect(stationStatus(res, "ringwood")!.status).toBe("boundary");
+  });
+
+  it("keeps an unmapped disruption visible even when a confident state outranks it", () => {
+    const res = computeStatus(
+      [
+        disruption({ id: "d1", parsed: false, wholeLine: false, stations: undefined }),
+        disruption({
+          id: "d2",
+          stations: ["caulfield", "carrum"],
+          fromStation: "caulfield",
+          toStation: "carrum",
+        }),
+      ],
+      AT,
+      UPDATED
+    );
+    const carrum = stationStatus(res, "carrum")!;
+    expect(carrum.status).toBe("boundary");
+    // The parser failed to understand something else on this line. That must
+    // survive alongside the confident state, not be masked by it.
+    expect(carrum.unmapped).toBe(true);
+    expect(carrum.lines.find((l) => l.lineId === "frankston")!.unmapped).toBe(true);
+  });
+
+  it("reports no-service outside timetabled hours rather than normal", () => {
+    // 3am Melbourne on a Wednesday — nothing is timetabled.
+    const at3am = new Date("2026-08-04T17:00:00Z");
+    const res = computeStatus([], at3am, UPDATED);
+    const sy = stationStatus(res, "south-yarra")!;
+    expect(sy.status).toBe("no-service");
+    expect(sy.lines.every((l) => l.status === "no-service")).toBe(true);
+  });
+
+  it("does not let one sleeping line outrank the running ones", () => {
+    // 21:30 Wednesday Melbourne: Stony Point has stopped for the night but
+    // Frankston has not, and Frankston station serves both. At midday this
+    // test would prove nothing — no line is asleep — so the hour matters.
+    const at930pm = new Date("2026-08-05T11:30:00Z");
+    const res = computeStatus([], at930pm, UPDATED);
+    const frankston = stationStatus(res, "frankston")!;
+    const asleep = frankston.lines.filter((l) => l.status === "no-service");
+    const awake = frankston.lines.filter((l) => l.status !== "no-service");
+    expect(asleep.length, "expected at least one sleeping line here").toBeGreaterThan(0);
+    expect(awake.length, "expected at least one running line here").toBeGreaterThan(0);
+    expect(frankston.status).not.toBe("no-service");
+  });
+
+  it("cuts every station when a whole line is replaced", () => {
+    const res = computeStatus(
+      [disruption({ lineIds: ["alamein"], wholeLine: true, stations: undefined })],
+      AT,
+      UPDATED
+    );
+    expect(stationStatus(res, "alamein")!.status).toBe("cut");
+    expect(stationStatus(res, "riversdale")!.status).toBe("cut");
+  });
+
+  it("emits a status for every station in the network model", () => {
     const res = computeStatus([], AT, UPDATED);
+    expect(res.stations.length).toBe(STATIONS.size);
+    for (const s of res.stations) expect(s.lines.length).toBeGreaterThan(0);
+    // The City Loop is not modelled at all, so these never appear.
     const ids = new Set(res.stations.map((s) => s.stationId));
-    expect(ids.has("flagstaff")).toBe(false);
-    expect(ids.has("richmond")).toBe(true);
+    for (const orphan of ["flagstaff", "melbourne-central", "parliament"]) {
+      expect(ids.has(orphan), orphan).toBe(false);
+    }
   });
 });
 ```
@@ -800,15 +1024,31 @@ In `lib/types.ts`, after the `SegmentStatus` interface:
 ```ts
 export type StationStatusKind =
   | "normal" // trains as timetabled
-  | "boundary" // trains terminate here, buses beyond
-  | "cut" // inside the affected section, no trains
-  | "warning"; // a disruption touches this line but couldn't be parsed
+  | "no-service" // outside timetabled hours — not a fault
+  | "warning" // a disruption touches this line but couldn't be parsed
+  | "boundary" // trains still reach here from the far side, buses beyond
+  | "cut"; // no trains reach here at all
+
+export interface StationLineStatus {
+  lineId: LineId;
+  status: StationStatusKind;
+  // True when a disruption touches this line that the parser could not map to
+  // a section. Deliberately separate from `status` so a confident boundary or
+  // cut can never hide the fact that something else is unaccounted for — the
+  // fail-visible rule applies per line, not just to the strongest signal.
+  unmapped: boolean;
+}
 
 export interface StationStatus {
   stationId: string;
+  // The worst state across every line this station serves — NOT a statement
+  // about the station as a whole. At an interchange like Flinders Street one
+  // closed line makes this `cut` while eleven others run normally, so UI that
+  // wants "is my line running" must read `lines`, not this.
   status: StationStatusKind;
+  unmapped: boolean; // any line has an unmapped disruption
   disruptionIds: string[];
-  lines: { lineId: LineId; status: StationStatusKind }[];
+  lines: StationLineStatus[];
 }
 ```
 
@@ -824,12 +1064,34 @@ In `lib/status.ts`, add after the `stationInSection` function:
 
 ```ts
 // Strongest signal wins when several lines disagree at one station.
+// `no-service` ranks below everything and is filtered out before this is used,
+// so a single sleeping line can never outrank eleven running ones.
 const STATION_RANK: Record<StationStatusKind, number> = {
+  "no-service": -1,
   normal: 0,
   warning: 1,
   boundary: 2,
   cut: 3,
 };
+
+// Is this station at an end of the affected section that trains can still
+// reach from the far side? An end that is also the line's terminus has no far
+// side — every service to it is replaced — so it is `cut`, not `boundary`.
+// Reporting "trains terminate here" at Belgrave during a Ringwood–Belgrave
+// shutdown would be a false all-clear, which is exactly what fail-visible
+// exists to prevent.
+function reachableFromBeyond(
+  stationId: string,
+  span: { from: string; to: string },
+  lineId: LineId
+): boolean {
+  const line = LINE_DEFS.find((l) => l.id === lineId);
+  if (!line) return false;
+  const i = line.stations.indexOf(stationId);
+  if (stationId === span.from) return i > 0;
+  if (stationId === span.to) return i < line.stations.length - 1;
+  return false;
+}
 
 // Per-station status at a moment. A station at the very edge of a section is
 // `boundary`, not `cut` — trains still reach it from the far side, which is
@@ -842,44 +1104,60 @@ export function computeStationStatuses(
   const out: StationStatus[] = [];
 
   for (const station of STATIONS.values()) {
-    // Orphan stations (the unmodelled City Loop) have no edges and no status.
-    if (!RENDERED_STATIONS.has(station.id)) continue;
-
-    const perLine: { lineId: LineId; status: StationStatusKind }[] = [];
+    const perLine: StationLineStatus[] = [];
     const ids = new Set<string>();
 
     for (const lineId of station.lines) {
-      let status: StationStatusKind = "normal";
-
       const warned = lineWarnings.get(lineId);
-      if (warned && warned.size > 0) {
-        status = "warning";
-        for (const id of warned) ids.add(id);
+      const unmapped = warned !== undefined && warned.size > 0;
+      if (warned) for (const id of warned) ids.add(id);
+
+      // Outside timetabled hours there is nothing to disrupt. Say that plainly
+      // instead of reporting "normal", which a reader takes as "trains running".
+      if (!isServiceRunning(lineId, t)) {
+        perLine.push({ lineId, status: "no-service", unmapped });
+        continue;
       }
 
-      if (isServiceRunning(lineId, t)) {
-        for (const d of active) {
-          if (!d.lineIds.includes(lineId)) continue;
+      let status: StationStatusKind = unmapped ? "warning" : "normal";
+
+      for (const d of active) {
+        if (!d.lineIds.includes(lineId)) continue;
+
+        // Mirror computeStatus's precedence. A disruption with no usable span
+        // is a line-level warning, already carried by `unmapped` — never a
+        // per-station blackout. This is the fail-visible rule.
+        const span = lineSpan(d, lineId);
+        let kind: StationStatusKind | null = null;
+        if (span) {
           if (!stationInSection(station.id, d, lineId)) continue;
-          const span = lineSpan(d, lineId);
-          const atEdge = span != null && (span.from === station.id || span.to === station.id);
-          const kind: StationStatusKind = atEdge ? "boundary" : "cut";
-          if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
-          ids.add(d.id);
+          kind = reachableFromBeyond(station.id, span, lineId) ? "boundary" : "cut";
+        } else if (d.parsed && d.wholeLine) {
+          kind = "cut";
         }
+        if (!kind) continue;
+
+        if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
+        ids.add(d.id);
       }
 
-      perLine.push({ lineId, status });
+      perLine.push({ lineId, status, unmapped });
     }
 
-    const overall = perLine.reduce<StationStatusKind>(
-      (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
-      "normal"
-    );
+    // `no-service` only wins when every line is asleep. Otherwise the worst
+    // real fault among the running lines is what matters.
+    const running = perLine.filter((l) => l.status !== "no-service");
+    const overall: StationStatusKind = running.length
+      ? running.reduce<StationStatusKind>(
+          (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
+          "normal"
+        )
+      : "no-service";
 
     out.push({
       stationId: station.id,
       status: overall,
+      unmapped: perLine.some((l) => l.unmapped),
       disruptionIds: [...ids],
       lines: perLine,
     });
@@ -889,12 +1167,16 @@ export function computeStationStatuses(
 }
 ```
 
-Add the imports at the top of `lib/status.ts`:
+Add the import at the top of `lib/status.ts`:
 
 ```ts
-import type { StationStatus, StationStatusKind } from "./types";
-import { RENDERED_STATIONS } from "./map/geometry";
+import type { StationLineStatus, StationStatus, StationStatusKind } from "./types";
 ```
+
+Note there is deliberately no `RENDERED_STATIONS` guard. The three City Loop
+orphans are absent from `lib/network/data.ts` entirely, so `STATIONS` never
+contains them and no filter is needed — adding one would couple domain logic to
+a generated map artifact for no live benefit.
 
 - [ ] **Step 5: Wire it into computeStatus**
 
@@ -1595,7 +1877,17 @@ In `components/map/MapLines.tsx`, replace the first `EDGES.map` block with:
 In `components/map/MapStations.tsx`, replace the visible `<circle>` with a status-aware mark:
 
 ```tsx
-        const st = statusByStation.get(s.id)?.status ?? "normal";
+        // `status` is the worst state across ALL lines, so one closed line would
+        // make Flinders Street look cut while eleven others run. Prefer the
+        // focused line's own view when there is one. focusedLine is null until
+        // Task 6 wires the picker, so this falls back to worst-line today —
+        // which errs toward showing a problem rather than hiding one.
+        const ss = statusByStation.get(s.id);
+        const focusedEntry = focusedLine ? ss?.lines.find((l) => l.lineId === focusedLine) : undefined;
+        const st = focusedEntry?.status ?? ss?.status ?? "normal";
+        // Deliberately independent of `st`: a confident cut must never hide the
+        // fact that another disruption on this line could not be mapped.
+        const unmapped = focusedEntry?.unmapped ?? ss?.unmapped ?? false;
         const r = s.interchange ? 8 : 6;
         return (
           <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200">
@@ -1609,7 +1901,7 @@ In `components/map/MapStations.tsx`, replace the visible `<circle>` with a statu
                 className="station-cut"
               />
             )}
-            {st === "warning" && (
+            {(st === "warning" || unmapped) && (
               <circle
                 cx={xy[0]}
                 cy={xy[1]}
@@ -1631,7 +1923,9 @@ In `components/map/MapStations.tsx`, replace the visible `<circle>` with a statu
                     ? "var(--warn)"
                     : "var(--map-station-fill)"
               }
-              stroke="var(--map-station-stroke)"
+              // no-service is not a fault — outside timetabled hours the whole
+              // map is in this state, so it must read as asleep, never broken.
+              stroke={st === "no-service" ? "var(--ink-faint)" : "var(--map-station-stroke)"}
               strokeWidth={s.interchange ? 4 : 3}
             />
             {/* boundary: trains reach this side only, so fill just half. */}
@@ -1696,7 +1990,12 @@ In `app/globals.css`, replace the existing `.seg-out` block with:
 
 - [ ] **Step 4: Update the legend**
 
-In `components/MapScreen.tsx`, the legend still describes the old rendering. Replace the three legend spans with:
+The legend currently advertises "Running / Buses / No service" while nothing draws them — it
+is actively wrong. Whatever you write must describe exactly what `MapLines` and `MapStations`
+really draw after this task and no more. If all five station states will not fit, cover the
+ones a user needs and leave the rest to the detail sheet.
+
+In `components/MapScreen.tsx`, replace the three legend spans with:
 
 ```tsx
             <span className="flex items-center gap-1.5">
@@ -1778,7 +2077,15 @@ export default function MapLabels({ statusByStation, focusedLine, zoom }: Props)
 
         const onFocusedLine = focusedLine !== null && s.lines.includes(focusedLine);
         const isTerminus = s.lines.some((l) => isLineEnd(s.id, l));
-        const disrupted = (statusByStation.get(s.id)?.status ?? "normal") !== "normal";
+        // Must NOT include no-service: at 3am every line is asleep, and
+        // treating that as "disrupted" would force all 222 labels on at once.
+        const sst = statusByStation.get(s.id);
+        const disrupted =
+          sst !== undefined &&
+          (sst.status === "warning" ||
+            sst.status === "boundary" ||
+            sst.status === "cut" ||
+            sst.unmapped);
 
         // Always: disrupted stations, interchanges, termini. With a line
         // focused, also that line's stations. Everything else waits for zoom.
@@ -1855,15 +2162,88 @@ Expected: at the default zoom only interchanges, termini and disrupted stations 
 
 If a cluster looks bad, adjust `LABEL_R` or the `CANDIDATES` order in `scripts/build_map_geometry.ts` and rerun `npm run map:build` — do not hand-edit `data/map-geometry.json`, it is generated.
 
-- [ ] **Step 5: Run tests and lint**
+- [ ] **Step 5: Test that the always-shown labels don't collide**
+
+Task 3's review found its anchor-consistency test only restates `anchorFor`'s
+definition and cannot fail. This is the test that carries real weight, and it belongs
+here because a failure is actionable here: the always-shown set (interchanges and
+termini) is what a user sees at default zoom, so those labels must not overlap.
+
+Add `tests/map-labels.test.ts`:
+
+```ts
+import { describe, it, expect } from "vitest";
+import { LINE_DEFS, STATIONS } from "@/lib/network/build";
+import { LABEL_PLACEMENT, RENDERED_STATIONS, STATION_XY } from "@/lib/map/geometry";
+
+// Estimated text box for a label. Overpass at these sizes averages a little
+// over half the font size per character; 0.55 is deliberately generous so the
+// test errs toward catching collisions rather than missing them.
+function box(id: string) {
+  const s = STATIONS.get(id)!;
+  const p = LABEL_PLACEMENT[id];
+  const xy = STATION_XY[id];
+  const size = s.interchange ? 15 : 13;
+  const w = s.name.length * size * 0.55;
+  const h = size * 1.2;
+  const x = xy[0] + p.dx;
+  const y = xy[1] + p.dy;
+  const left = p.anchor === "start" ? x : p.anchor === "end" ? x - w : x - w / 2;
+  const top = y - h / 2;
+  return { left, top, right: left + w, bottom: top + h, id };
+}
+
+function overlaps(a: ReturnType<typeof box>, b: ReturnType<typeof box>) {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+describe("always-shown labels", () => {
+  // Interchanges and termini are labelled at every zoom, so they are the set
+  // that must stay legible without the user zooming in.
+  const alwaysShown = [...RENDERED_STATIONS].filter((id) => {
+    const s = STATIONS.get(id)!;
+    if (s.interchange) return true;
+    return s.lines.some((l) => {
+      const line = LINE_DEFS.find((d) => d.id === l)!;
+      return line.stations[0] === id || line.stations[line.stations.length - 1] === id;
+    });
+  });
+
+  it("labels a sensible number of stations at default zoom", () => {
+    expect(alwaysShown.length).toBeGreaterThan(10);
+    expect(alwaysShown.length).toBeLessThan(90);
+  });
+
+  it("does not overlap any two of them", () => {
+    const boxes = alwaysShown.map(box);
+    const clashes: string[] = [];
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        if (overlaps(boxes[i], boxes[j])) clashes.push(`${boxes[i].id} / ${boxes[j].id}`);
+      }
+    }
+    expect(clashes).toEqual([]);
+  });
+});
+```
+
+Run: `npx vitest run tests/map-labels.test.ts`
+
+If clashes appear, fix them by adding a manual override block to
+`scripts/build_map_geometry.ts` — a `LABEL_OVERRIDES: Record<string, LabelPlacement>` applied
+after `placeLabels` — with an entry per clashing station, then rerun `npm run map:build`.
+Do NOT relax the test or shrink the estimated box to make it pass. Report the clash list
+either way so the plan owner can see how crowded the map actually is.
+
+- [ ] **Step 6: Run tests and lint**
 
 Run: `npm test && npm run lint`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add components/map/MapLabels.tsx components/NetworkMap.tsx app/globals.css
+git add components/map/MapLabels.tsx components/NetworkMap.tsx app/globals.css tests/map-labels.test.ts
 git commit -m "Draw station labels from precomputed placement
 
 Interchanges, termini and disrupted stations are always named; the rest fade in
@@ -2142,8 +2522,9 @@ Under **Critical constraints**, add:
 ```markdown
 - **`data/map-geometry.json` is generated — never hand-edit it.** Fix geometry in
   `data/map-overrides.json` or the scoring in `scripts/build_map_geometry.ts`, then rerun
-  `npm run map:build`. `tests/map-geometry.test.ts` fails if any edge stops more than 25 px
-  from its station.
+  `npm run map:build`. `tests/map-geometry.test.ts` fails if the build had to drag any
+  polyline more than 25 px to reach its station — a long reach means the edge was routed
+  somewhere else entirely and needs a hand-authored polyline, not a snap.
 ```
 
 - [ ] **Step 5: Run everything**

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "scrape": "tsx scripts/scrape.ts",
+    "map:build": "tsx scripts/build_map_geometry.ts",
     "test": "vitest run"
   },
   "dependencies": {

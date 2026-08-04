@@ -3,9 +3,12 @@ import type {
   Disruption,
   LineId,
   SegmentStatus,
+  StationLineStatus,
+  StationStatus,
+  StationStatusKind,
   StatusResponse,
 } from "./types";
-import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges } from "./network/build";
+import { EDGES, LINE_DEFS, STATIONS, edgesBetween, lineEdges, matchSequence } from "./network/build";
 import { isServiceRunning, toMelTime, type MelTime } from "./spans";
 import { melbourneLocalToIso, melbourneTimeLabel } from "./meltz";
 
@@ -49,12 +52,35 @@ export function computeStatus(
     }
   }
 
+  // Sever a segment and record the disruption, without listing the same
+  // disruption twice on one segment — a whole-line replacement and a
+  // co-occurring City Loop closure both touch the ring edges below.
+  const markSegment = (s: SegmentStatus, d: Disruption): void => {
+    s.status = "bus-replacement";
+    if (!s.disruptionIds.includes(d.id)) s.disruptionIds.push(d.id);
+  };
+
   const lineWarnings = new Map<LineId, Set<string>>();
   for (const d of active) {
     for (const lineId of d.lineIds) {
       // Outside timetabled hours "no trains" already tells the story;
       // don't paint bus replacements over it at 4am.
       if (!isServiceRunning(lineId, t)) continue;
+      // A City Loop closure rides alongside any explicit section/whole-line
+      // meaning below — it never replaces it. Sever just the ring edges that
+      // touch a skipped station (never Flinders Street/Southern Cross, which
+      // are the surface route every train uses whether via the loop or not).
+      // The whole-line branch below can also cover these same edges (a
+      // whole-line replacement and a loop closure can both be true on one
+      // disruption) — markSegment dedupes so that's a no-op, not a double
+      // count.
+      if (d.skipsStations) {
+        for (const e of lineEdges(lineId)) {
+          if (!d.skipsStations.includes(e.from) && !d.skipsStations.includes(e.to)) continue;
+          markSegment(segmentMap.get(e.id)!, d);
+        }
+      }
+
       const span = lineSpan(d, lineId);
       if (span) {
         const edges = edgesBetween(lineId, span.from, span.to);
@@ -65,20 +91,20 @@ export function computeStatus(
           continue;
         }
         for (const e of edges) {
-          const s = segmentMap.get(e.id)!;
-          s.status = "bus-replacement";
-          s.disruptionIds.push(d.id);
+          markSegment(segmentMap.get(e.id)!, d);
         }
       } else if (d.parsed && d.wholeLine) {
-        // Explicit whole-line replacement ("Buses replace trains.").
+        // Explicit whole-line replacement ("Buses replace trains.") — wins
+        // for the trunk. A co-occurring skipsStations already severed the
+        // ring above; this covers the rest of the line to the same severity.
         for (const e of lineEdges(lineId)) {
-          const s = segmentMap.get(e.id)!;
-          s.status = "bus-replacement";
-          s.disruptionIds.push(d.id);
+          markSegment(segmentMap.get(e.id)!, d);
         }
-      } else {
+      } else if (!d.skipsStations) {
         // Couldn't parse a section: warn on the whole line, never a
-        // possibly-wrong blackout.
+        // possibly-wrong blackout. A loop closure with no other section
+        // already has a precise answer — the ring edges severed above — so
+        // it never falls through to this "we don't understand it" warning.
         if (!lineWarnings.has(lineId)) lineWarnings.set(lineId, new Set());
         lineWarnings.get(lineId)!.add(d.id);
       }
@@ -92,6 +118,7 @@ export function computeStatus(
     dataUpdatedAt,
     stale: staleMs > 3 * 24 * 3600 * 1000,
     segments: [...segmentMap.values()],
+    stations: computeStationStatuses(active, t, lineWarnings),
     lineWarnings: [...lineWarnings.entries()].map(([lineId, ids]) => ({
       lineId,
       disruptionIds: [...ids],
@@ -105,26 +132,147 @@ export function computeStatus(
 function lineSpan(d: Disruption, lineId: LineId): { from: string; to: string } | null {
   if (!d.parsed) return null;
   const mentioned = d.stations ?? (d.fromStation && d.toStation ? [d.fromStation, d.toStation] : []);
-  const line = LINE_DEFS.find((l) => l.id === lineId);
-  if (!line) return null;
+  const seq = matchSequence(lineId);
+  if (seq.length === 0) return null;
   const idxs = mentioned
-    .map((s) => line.stations.indexOf(s))
+    .map((s) => seq.indexOf(s))
     .filter((i) => i !== -1)
     .sort((a, b) => a - b);
   if (idxs.length < 2) return null;
-  return { from: line.stations[idxs[0]], to: line.stations[idxs[idxs.length - 1]] };
+  return { from: seq[idxs[0]], to: seq[idxs[idxs.length - 1]] };
 }
 
 // Is a station inside the affected section of a disruption on a given line?
 function stationInSection(stationId: string, d: Disruption, lineId: LineId): boolean {
+  // A City Loop closure names its affected stations directly rather than as
+  // a span — check that before anything else, the same way computeStatus and
+  // computeStationStatuses do. Without this, a loop-only disruption
+  // (skipsStations set, no separate section) has no span at all and every
+  // caller of this function — including the Calendar tab — reads every
+  // station as unaffected: a silent all-clear.
+  if (d.skipsStations?.includes(stationId)) return true;
   if (d.wholeLine || !d.parsed) return true;
   const span = lineSpan(d, lineId);
   if (!span) return false;
-  const line = LINE_DEFS.find((l) => l.id === lineId)!;
-  const i = line.stations.indexOf(stationId);
-  const lo = line.stations.indexOf(span.from);
-  const hi = line.stations.indexOf(span.to);
+  const seq = matchSequence(lineId);
+  const i = seq.indexOf(stationId);
+  const lo = seq.indexOf(span.from);
+  const hi = seq.indexOf(span.to);
   return i !== -1 && i >= lo && i <= hi;
+}
+
+// Strongest signal wins when several lines disagree at one station.
+// `no-service` ranks below everything and is filtered out before this is used,
+// so a single sleeping line can never outrank eleven running ones.
+const STATION_RANK: Record<StationStatusKind, number> = {
+  "no-service": -1,
+  normal: 0,
+  warning: 1,
+  boundary: 2,
+  cut: 3,
+};
+
+// Is this station at an end of the affected section that trains can still
+// reach from the far side? An end that is also the line's terminus has no far
+// side — every service to it is replaced — so it is `cut`, not `boundary`.
+// Reporting "trains terminate here" at Belgrave during a Ringwood–Belgrave
+// shutdown would be a false all-clear, which is exactly what fail-visible
+// exists to prevent.
+function reachableFromBeyond(
+  stationId: string,
+  span: { from: string; to: string },
+  lineId: LineId
+): boolean {
+  const seq = matchSequence(lineId);
+  const i = seq.indexOf(stationId);
+  if (i === -1) return false;
+  if (stationId === span.from) return i > 0;
+  if (stationId === span.to) return i < seq.length - 1;
+  return false;
+}
+
+// Per-station status at a moment. A station at the very edge of a section is
+// `boundary`, not `cut` — trains still reach it from the far side, which is
+// what people actually want to know.
+export function computeStationStatuses(
+  active: Disruption[],
+  t: MelTime,
+  lineWarnings: Map<LineId, Set<string>>
+): StationStatus[] {
+  const out: StationStatus[] = [];
+
+  for (const station of STATIONS.values()) {
+    const perLine: StationLineStatus[] = [];
+    const ids = new Set<string>();
+
+    for (const lineId of station.lines) {
+      const warned = lineWarnings.get(lineId);
+      const unmapped = warned !== undefined && warned.size > 0;
+      if (warned) for (const id of warned) ids.add(id);
+
+      // Outside timetabled hours there is nothing to disrupt. Say that plainly
+      // instead of reporting "normal", which a reader takes as "trains running".
+      if (!isServiceRunning(lineId, t)) {
+        perLine.push({ lineId, status: "no-service", unmapped });
+        continue;
+      }
+
+      let status: StationStatusKind = unmapped ? "warning" : "normal";
+
+      for (const d of active) {
+        if (!d.lineIds.includes(lineId)) continue;
+
+        // City Loop closure: this exact station is named as skipped, full
+        // stop. Not a span, so it must never go through lineSpan/reachability
+        // — that logic treats index 0 (Flinders Street) as unreachable "from
+        // beyond", which would wrongly cut the station the text says trains
+        // still run to.
+        if (d.skipsStations?.includes(station.id)) {
+          if (STATION_RANK.cut > STATION_RANK[status]) status = "cut";
+          ids.add(d.id);
+          continue;
+        }
+
+        // Mirror computeStatus's precedence. A disruption with no usable span
+        // is a line-level warning, already carried by `unmapped` — never a
+        // per-station blackout. This is the fail-visible rule.
+        const span = lineSpan(d, lineId);
+        let kind: StationStatusKind | null = null;
+        if (span) {
+          if (!stationInSection(station.id, d, lineId)) continue;
+          kind = reachableFromBeyond(station.id, span, lineId) ? "boundary" : "cut";
+        } else if (d.parsed && d.wholeLine) {
+          kind = "cut";
+        }
+        if (!kind) continue;
+
+        if (STATION_RANK[kind] > STATION_RANK[status]) status = kind;
+        ids.add(d.id);
+      }
+
+      perLine.push({ lineId, status, unmapped });
+    }
+
+    // `no-service` only wins when every line is asleep. Otherwise the worst
+    // real fault among the running lines is what matters.
+    const running = perLine.filter((l) => l.status !== "no-service");
+    const overall: StationStatusKind = running.length
+      ? running.reduce<StationStatusKind>(
+          (acc, l) => (STATION_RANK[l.status] > STATION_RANK[acc] ? l.status : acc),
+          "normal"
+        )
+      : "no-service";
+
+    out.push({
+      stationId: station.id,
+      status: overall,
+      unmapped: perLine.some((l) => l.unmapped),
+      disruptionIds: [...ids],
+      lines: perLine,
+    });
+  }
+
+  return out;
 }
 
 function minutesToLabel(min: number): string {

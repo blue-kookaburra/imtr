@@ -54,6 +54,35 @@ export interface SegmentStatus {
   disruptionIds: string[];
 }
 
+export type StationStatusKind =
+  | "normal" // trains as timetabled
+  | "no-service" // outside timetabled hours — not a fault
+  | "warning" // a disruption touches this line but couldn't be parsed
+  | "boundary" // trains still reach here from the far side, buses beyond
+  | "cut"; // no trains reach here at all
+
+export interface StationLineStatus {
+  lineId: LineId;
+  status: StationStatusKind;
+  // True when a disruption touches this line that the parser could not map to
+  // a section. Deliberately separate from `status` so a confident boundary or
+  // cut can never hide the fact that something else is unaccounted for — the
+  // fail-visible rule applies per line, not just to the strongest signal.
+  unmapped: boolean;
+}
+
+export interface StationStatus {
+  stationId: string;
+  // The worst state across every line this station serves — NOT a statement
+  // about the station as a whole. At an interchange like Flinders Street one
+  // closed line makes this `cut` while eleven others run normally, so UI that
+  // wants "is my line running" must read `lines`, not this.
+  status: StationStatusKind;
+  unmapped: boolean; // any line has an unmapped disruption
+  disruptionIds: string[];
+  lines: StationLineStatus[];
+}
+
 // Normalized disruption produced by the parser.
 export interface Disruption {
   id: string; // stable hash of source row
@@ -65,6 +94,11 @@ export interface Disruption {
   // ("between Parliament, Alamein and Box Hill") span min..max of the ones
   // present on each affected line.
   stations?: string[];
+  // Stations skipped while the line itself keeps running — a City Loop
+  // closure ("trains run direct to Flinders Street"). Deliberately NOT a
+  // span: it names exactly the stations that lose service and never widens
+  // to cover anything between them.
+  skipsStations?: string[];
   wholeLine: boolean;
   parsed: boolean; // false => render as warning, never blackout
   // Inclusive date range, local Melbourne dates (YYYY-MM-DD).
@@ -89,6 +123,7 @@ export interface StatusResponse {
   dataUpdatedAt: string; // when scrape cache was last refreshed
   stale: boolean;
   segments: SegmentStatus[];
+  stations: StationStatus[];
   lineWarnings: { lineId: LineId; disruptionIds: string[] }[];
   disruptions: Disruption[];
 }
