@@ -308,3 +308,69 @@ describe("loop closures", () => {
     expect(loopSkippedStations("Trains may be delayed up to 20 minutes.")).toBeNull();
   });
 });
+
+// Every article page on this CMS carries a static help panel that says
+// "Travelling on replacement buses" and "You can't take certain items on
+// replacement buses". That is page furniture, not a claim about this
+// disruption, and parseArticle reads the whole body — so any whole-line
+// wording matched loosely enough to hit it turns every article into a
+// full-line blackout.
+describe("article boilerplate is not a service claim", () => {
+  const ARTICLE = readFileSync(join(__dirname, "fixtures", "article-werribee.html"), "utf-8");
+  const URL = "https://transport.vic.gov.au/disruptions/disruptions-information/article/test";
+
+  function withBody(subtitle: string, body: string): string {
+    // Reuse the real fixture's shell — including its boilerplate — and swap
+    // only what the disruption itself says.
+    const m = ARTICLE.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)!;
+    const data = JSON.parse(m[1]);
+    const a = data.props.pageProps.disruption;
+    a.SubtitleMessage = subtitle;
+    a.ArticleTitle = subtitle;
+    a.Article = `${body} <h2>Travelling on replacement buses</h2><p>You can't take certain items on replacement buses.</p>`;
+    return `<script id="__NEXT_DATA__">${JSON.stringify(data)}</script>`;
+  }
+
+  it("does not read the help panel as a whole-line replacement", () => {
+    const d = parseArticle(
+      withBody(
+        "Trains run direct to Flinders Street",
+        "Trains do not run via the City Loop."
+      ),
+      URL
+    )!;
+    expect(d).not.toBeNull();
+    expect(d.wholeLine, "boilerplate must not black out the line").toBe(false);
+    expect(d.skipsStations).toEqual(["flagstaff", "melbourne-central", "parliament"]);
+  });
+
+  it("still rejects an article that describes no service gap", () => {
+    const d = parseArticle(
+      withBody("Timetable changes", "Some services will run to a changed timetable."),
+      URL
+    );
+    expect(d, "a timetable notice is not a disruption").toBeNull();
+  });
+
+  it("still reads a real whole-line claim in the body", () => {
+    const d = parseArticle(
+      withBody("Buses replace trains", "Buses replace trains all weekend."),
+      URL
+    )!;
+    expect(d.wholeLine).toBe(true);
+  });
+
+  // The distinction the fix turns on: the same noun phrase is a claim when it
+  // is doing something and furniture when it is not. Both directions are
+  // pinned here so neither can drift.
+  it("reads 'replacement buses' as a claim when they are doing something", () => {
+    for (const body of [
+      "Replacement buses operate all weekend.",
+      "Replacement buses for trains run direct to Flinders Street.",
+    ]) {
+      const d = parseArticle(withBody("Replacement buses", body), URL)!;
+      expect(d, body).not.toBeNull();
+      expect(d.wholeLine, body).toBe(true);
+    }
+  });
+});
