@@ -455,3 +455,109 @@ describe("computeCalendar sees a loop closure (F3 regression)", () => {
     expect(days.every((d) => d.status === "normal")).toBe(true);
   });
 });
+
+// F5: WHOLE_LINE_REPLACED's weak alternatives ("no trains", "trains do not
+// run", "bus replacement") also match sentences describing only a City Loop
+// ring closure, and set wholeLine: true for them — blacking out the entire
+// line instead of just the 4 ring edges. All four regression rows below read
+// `wholeLine: false` (ring-only) on main (c435428); the weak alternatives
+// must only count when there's no co-occurring skipsStations. Every case is
+// exercised through the real parser and into computeStatus, counting bussed
+// edges rather than just inspecting wholeLine, so an equivalent regression
+// (any weak wording swallowing the whole line) cannot pass silently.
+describe("weak whole-line wording must not blackout a loop-only closure (F5 regression)", () => {
+  // Tuesday midday, inside the Aug 10-12 date range, well within timetabled hours.
+  const AT = new Date("2026-08-11T02:00:00Z");
+
+  function ringOnlyCheck(lineId: LineId, disruptions: Disruption[]) {
+    expect(disruptions).toHaveLength(1);
+    expect(disruptions[0].wholeLine).toBe(false);
+    const res = computeStatus(disruptions, AT, "2026-08-04T00:00:00Z");
+    const lineEdgeIds = EDGES.filter((e) => e.lineId === lineId).map((e) => e.id);
+    const bussed = lineEdgeIds.filter(
+      (id) => res.segments.find((s) => s.edgeId === id)!.status === "bus-replacement"
+    );
+    // Exactly the 4 ring edges, never the whole line.
+    expect(bussed.length).toBe(4);
+    expect(bussed.length).toBeLessThan(lineEdgeIds.length);
+    // No "couldn't parse a section" warning either — the loop closure is its
+    // own confident claim.
+    expect(res.lineWarnings.find((w) => w.lineId === lineId)).toBeUndefined();
+  }
+
+  it("'Trains do not run via the City Loop.' severs only the 4 ring edges on Craigieburn", () => {
+    const row =
+      "Craigieburn Line: Trains do not run via the City Loop. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    ringOnlyCheck("craigieburn", disruptions);
+  });
+
+  it("'Trains do not run through the City Loop.' severs only the 4 ring edges on Craigieburn", () => {
+    const row =
+      "Craigieburn Line: Trains do not run through the City Loop. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    ringOnlyCheck("craigieburn", disruptions);
+  });
+
+  it("'Trains bypass the City Loop; no trains will stop at Flagstaff, Melbourne Central and Parliament.' severs only the 4 ring edges on Belgrave", () => {
+    const row =
+      "Belgrave Line: Trains bypass the City Loop; no trains will stop at Flagstaff, " +
+      "Melbourne Central and Parliament. Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    ringOnlyCheck("belgrave", disruptions);
+  });
+
+  it("'Bus replacement operates while the City Loop is closed.' severs only the 4 ring edges on Belgrave", () => {
+    const row =
+      "Belgrave Line: Bus replacement operates while the City Loop is closed. " +
+      "Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    ringOnlyCheck("belgrave", disruptions);
+  });
+
+  it("parseArticle also keeps 'Trains do not run via the City Loop.' ring-only", () => {
+    const articleHtml = `<script id="__NEXT_DATA__">${JSON.stringify({
+      props: {
+        pageProps: {
+          disruption: {
+            ID: 5151,
+            Title: "Craigieburn Line",
+            ArticleTitle: "Craigieburn Line: City Loop closure",
+            SubtitleMessage: "Trains do not run via the City Loop.",
+            FromDate: "2026-08-10 21:00:00",
+            ToDate: "2026-08-12 05:00:00",
+            Article: "<p>Trains do not run via the City Loop.</p>",
+            Lines: { "1": { Line: "Craigieburn" } },
+          },
+        },
+      },
+    })}</script>`;
+    const d = parseArticle(articleHtml, "https://example.test/article");
+    expect(d).not.toBeNull();
+    expect(d!.wholeLine).toBe(false);
+    expect(d!.skipsStations?.slice().sort()).toEqual(
+      ["flagstaff", "melbourne-central", "parliament"].sort()
+    );
+    const res = computeStatus([d!], AT, "2026-08-04T00:00:00Z");
+    const lineEdgeIds = EDGES.filter((e) => e.lineId === "craigieburn").map((e) => e.id);
+    const bussed = lineEdgeIds.filter(
+      (id) => res.segments.find((s) => s.edgeId === id)!.status === "bus-replacement"
+    );
+    expect(bussed.length).toBe(4);
+  });
+
+  it("strong wording ('buses replace trains') still blacks out the whole line even with no loop phrase (Alamein)", () => {
+    const row = "Alamein Line: Buses replace trains. Monday 10 August to Wednesday 12 August.";
+    const disruptions = parsePage(rowPage(row), new Date("2026-08-01T00:00:00Z"));
+    expect(disruptions).toHaveLength(1);
+    expect(disruptions[0].wholeLine).toBe(true);
+    const res = computeStatus(disruptions, AT, "2026-08-04T00:00:00Z");
+    const lineEdgeIds = EDGES.filter((e) => e.lineId === "alamein").map((e) => e.id);
+    const bussed = lineEdgeIds.filter(
+      (id) => res.segments.find((s) => s.edgeId === id)!.status === "bus-replacement"
+    );
+    expect(bussed.length).toBe(lineEdgeIds.length);
+  });
+});

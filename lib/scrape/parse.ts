@@ -163,8 +163,17 @@ export function loopSkippedStations(text: string): string[] | null {
 // trains. The City Loop is closed."). Detect it by its own wording rather
 // than inferring it from the mere absence of a parsed station section, so a
 // co-occurring loop sentence can never suppress it.
-const WHOLE_LINE_REPLACED =
-  /\bbuses\s+replace\s+trains\b|\bcoaches\s+replace\s+trains\b|\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do\s+)?not\s+run\b/i;
+//
+// Split into strong/weak because the weak alternatives ("no trains", "trains
+// do not run", "bus replacement") also show up in sentences that describe
+// only a City Loop ring closure ("Trains do not run via the City Loop"),
+// which must NOT black out the whole line. The strong alternatives (an
+// explicit "buses/coaches replace trains") are unambiguous and are what the
+// co-occurrence fix above actually needed, so they apply regardless of a
+// loop closure being present too. The weak alternatives only count when
+// there's no co-occurring loop closure to explain them instead.
+const WHOLE_LINE_REPLACED_STRONG = /\bbuses\s+replace\s+trains\b|\bcoaches\s+replace\s+trains\b/i;
+const WHOLE_LINE_REPLACED_WEAK = /\bbus\s+replacement\b|\bno\s+trains\b|\btrains\s+(?:do\s+)?not\s+run\b/i;
 
 function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
   const lower = text.toLowerCase();
@@ -276,7 +285,12 @@ export function parseArticle(pageHtml: string, articleUrl: string, refDate = new
   const titleHintsUnparsedSection = /between/i.test(`${a.ArticleTitle ?? ""} ${a.SubtitleMessage ?? ""}`);
   // Whole-line bus/coach replacement is its own claim, independent of a
   // co-occurring City Loop closure — both can be true on one disruption.
-  const wholeLine = !stations && !titleHintsUnparsedSection && WHOLE_LINE_REPLACED.test(allText);
+  // Strong wording always counts; weak wording only counts when there's no
+  // loop closure already explaining it (see WHOLE_LINE_REPLACED_WEAK above).
+  const wholeLine =
+    !stations &&
+    !titleHintsUnparsedSection &&
+    (WHOLE_LINE_REPLACED_STRONG.test(allText) || (!skipsStations && WHOLE_LINE_REPLACED_WEAK.test(allText)));
 
   const base = {
     id: `art-${a.ID}`,
@@ -374,9 +388,13 @@ export function parsePage(pageHtml: string, refDate: Date, pageUrl?: string): Di
       // replaced; that's a confident blackout, not a warning. This is
       // independent of a co-occurring loop closure — "Buses replace trains.
       // The City Loop is closed." bussed the whole line AND skips the ring,
-      // and neither claim should suppress the other.
+      // and neither claim should suppress the other. Strong wording always
+      // counts; weak wording only counts absent a loop closure explaining it
+      // (see WHOLE_LINE_REPLACED_WEAK above).
       const wholeLine =
-        !stations && !/\b(between|from)\b/i.test(rawText) && WHOLE_LINE_REPLACED.test(rawText);
+        !stations &&
+        !/\b(between|from)\b/i.test(rawText) &&
+        (WHOLE_LINE_REPLACED_STRONG.test(rawText) || (!skipsStations && WHOLE_LINE_REPLACED_WEAK.test(rawText)));
 
       const id = hashId(`${lineIds.join(",")}|${startDate}|${endDate}|${rawText}`);
       if (out.has(id)) continue;
