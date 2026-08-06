@@ -2,6 +2,7 @@
 
 import { EDGES, LINE_BY_ID } from "@/lib/network/build";
 import { EDGE_PATH, pathD } from "@/lib/map/geometry";
+import { hitOrder } from "@/lib/map/hit";
 import type { Edge, LineId, SegmentStatus } from "@/lib/types";
 
 interface Props {
@@ -98,8 +99,10 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
       })}
 
       {/* Invisible fat paths carry the taps. Drawn after the visible strokes so
-          they sit on top, but below the station targets added by MapStations. */}
-      {EDGES.map((e) => {
+          they sit on top, but below the station targets added by MapStations.
+          Ordered so the focused line's edge wins where lines share a polyline —
+          see hitOrder. */}
+      {hitOrder(EDGES, focusedLine).map((e) => {
         const pts = EDGE_PATH[e.id];
         if (!pts) return null;
         return (
