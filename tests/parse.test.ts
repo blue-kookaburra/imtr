@@ -301,6 +301,20 @@ describe("loop closures", () => {
     expect(loopSkippedStations(text)).toBeNull();
   });
 
+  it("keeps a section that carries a trailing time phrase", () => {
+    // "between X and Y from 9.30pm" is ordinary wording. The trailing "from"
+    // used to be swallowed into the station list, leaving "belgrave from"
+    // unresolvable and one name standing — so the section was dropped and the
+    // whole line got a warning instead of the two stations the text names.
+    for (const text of [
+      "Buses replace trains between Ringwood and Belgrave from 9.30pm.",
+      "Buses replace trains from Ringwood to Belgrave from 9.30pm.",
+      "Buses replace trains between Ringwood and Belgrave from 9.30pm until 5am",
+    ]) {
+      expect(sectionStations(text)?.slice().sort(), text).toEqual(["belgrave", "ringwood"].sort());
+    }
+  });
+
   it("still declines to guess on text with no section and no loop phrase", () => {
     expect(sectionStations("Major works affecting services. Check before you travel.")).toBeNull();
     expect(sectionStations("Trains may be delayed up to 20 minutes.")).toBeNull();

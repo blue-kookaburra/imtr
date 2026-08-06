@@ -123,9 +123,15 @@ function resolveStation(name: string): string | undefined {
 // per line downstream. Explicit sections only — a loop closure is a
 // different shape (see `loopSkippedStations` below) and is never faked as a
 // span here.
+// A second `from` always opens a new clause — the first one is consumed by the
+// prefix — so it ends the station list. Without it, "between Ringwood and
+// Belgrave from 9.30pm" captured "Ringwood and Belgrave from", leaving
+// "belgrave from" unresolvable and only one name standing, and the section was
+// dropped for a whole-line warning. `\s+\d` cannot cover this: the clock time
+// is separated from the names by the word, not by the digit.
 export function sectionStations(text: string): string[] | null {
   const m = text.match(
-    /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why)\b|\s+\d|$)/i
+    /(?:between|from)\s+([A-Za-z',\/ ]+?)(?:\.|,?\s+(?:each|nightly|daily|after|until|while|due|stations|when|what|why|from)\b|\s+\d|$)/i
   );
   if (!m) return null;
   const parts = m[1].split(/,|\/|\band\b|\bto\b/i);
