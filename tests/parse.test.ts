@@ -245,6 +245,23 @@ describe("loop closures", () => {
     expect(loopSkippedStations("Trains will not run through the City Loop.")).not.toBeNull();
   });
 
+  it("recognises 'no trains through the City Loop'", () => {
+    // Without this phrasing, the row landed on a line-level warning instead of
+    // a ring closure: the weak whole-line claim was suppressed by its own
+    // sentence mentioning the loop, but nothing set skipsStations, so the
+    // three ring stations were never marked. Fail-visible-safe, but less than
+    // the text says.
+    expect(loopSkippedStations("There are no trains through the City Loop.")).not.toBeNull();
+    expect(loopSkippedStations("No trains via the City Loop this weekend.")).not.toBeNull();
+  });
+
+  it("does not read 'no trains' plus an unrelated loop sentence as one claim", () => {
+    // The whole-line half of this text is a separate claim; only the loop
+    // sentence may set the ring, and the {0,60} reach must not cross the stop.
+    expect(loopSkippedStations("No trains on the Belgrave line this weekend.")).toBeNull();
+    expect(loopSkippedStations("No trains between Ringwood and Belgrave.")).toBeNull();
+  });
+
   it("reads an explicit skip list naming all three ring stations", () => {
     const skipped = loopSkippedStations(
       "Trains will not stop at Flagstaff, Melbourne Central and Parliament."

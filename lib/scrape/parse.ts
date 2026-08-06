@@ -157,8 +157,16 @@ const LOOP_SKIPPED = ["flagstaff", "melbourne-central", "parliament"];
 // station could be skipped for any number of unrelated reasons) — it only
 // counts once all three ring stations are named together, stable CMS
 // boilerplate.
+//
+// "no trains via/through the City Loop" states the closure without ever
+// saying "not run", so the "not" alternative misses it. Its own sentence
+// keeps the weak whole-line claim suppressed either way, but until this
+// matched, nothing set skipsStations and the row landed on a line-level
+// warning instead of the ring closure the text plainly describes. The "no
+// trains" prefix is its own subject guard, so the replacement lookbehinds
+// above are not needed on this branch.
 const LOOP_CLOSED =
-  /(?<!replace[sd]?\s)(?<!replacing\s)(?<!for\s)\btrains?\b[^.]{0,60}?\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?(?:via|through)\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff,?\s+melbourne\s+central\s+and\s+parliament)|\bcity\s+loop\s+(?:is\s+)?closed\b/i;
+  /(?<!replace[sd]?\s)(?<!replacing\s)(?<!for\s)\btrains?\b[^.]{0,60}?\b(?:run(?:ning|s)?\s+direct\s+to\s+flinders\s+street|not\s+(?:run\s+)?(?:via|through)\s+the\s+city\s+loop|bypass(?:ing|es)?\s+the\s+city\s+loop|not\s+stop\s+at\s+flagstaff,?\s+melbourne\s+central\s+and\s+parliament)|\bno\s+trains?\b[^.]{0,60}?\b(?:via|through)\s+the\s+city\s+loop\b|\bcity\s+loop\s+(?:is\s+)?closed\b/i;
 
 export function loopSkippedStations(text: string): string[] | null {
   return LOOP_CLOSED.test(text) ? [...LOOP_SKIPPED] : null;
