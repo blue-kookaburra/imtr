@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Logo from "./Logo";
 
 interface Props {
   at: string | null; // datetime-local value, null = now
@@ -31,7 +32,11 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
   }
   return (
     <header className="shrink-0 border-b border-hairline bg-elevated/95 px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-2.5 backdrop-blur">
-      <div className="mx-auto flex max-w-md items-center gap-3">
+      <div className="mx-auto flex max-w-md items-center gap-2.5">
+        {/* h-8 is the floor the mark stays legible at — its window and grille
+            lines grey out below roughly 32px. The Now/Later pills are taller
+            than this, so the mark costs no header height. */}
+        <Logo className="h-8 w-auto shrink-0 text-ink" />
         <h1 className="flex-1 text-[15px] font-extrabold leading-tight tracking-tight">
           Is my train running?
         </h1>

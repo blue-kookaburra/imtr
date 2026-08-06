@@ -18,6 +18,7 @@ npx vitest run tests/parse.test.ts -t "article"   # single test by name filter
 npm run scrape       # refresh data/disruptions.json (needs curl on PATH)
 python scripts/extract_map.py   # regenerate docs/network-map.png + station/edge coords from docs/official-map.pdf
 npm run map:build    # rebuild data/map-geometry.json from extracted coords + hand overrides
+npm run brand:build  # rebuild the logo mark + every app icon from docs/brand/
 ```
 
 Deploy: push to `main` (repo github.com/blue-kookaburra/imtr, connected to Vercel project `imtr`), or `npx vercel --prod --yes`. Live at https://imtr-blue-kookaburras-projects.vercel.app.
@@ -27,6 +28,7 @@ Deploy: push to `main` (repo github.com/blue-kookaburra/imtr, connected to Verce
 - **transport.vic.gov.au fingerprints TLS.** Node fetch gets 403 even with full browser headers; plain `curl` passes. All scraping therefore happens in GitHub Actions (`.github/workflows/scrape.yml`, every 2 days) via `scripts/scrape.ts`, which shells out to curl and commits `data/disruptions.json`. Never move scraping into Next.js runtime/serverless — it will 403 on Vercel.
 - **The official map PDF has no text layer.** `scripts/extract_map.py` OCRs station labels (Tesseract at `C:\Program Files\Tesseract-OCR`), snaps them to colour-matched vector paths, and Dijkstra-routes every edge along the drawn artwork. Rerun only when a new map edition lands in `docs/official-map.pdf`.
 - **Fail-visible principle.** Anything the parser can't confidently map to track segments renders as a line-level ⚠ warning — never a possibly-wrong blackout, never a false "all clear". Preserve this in any parser/merge change.
+- **The logo lives in `docs/brand/`, and everything shipped from it is generated.** `train-mark-outline.svg` is an Illustrator export holding **two** stacked copies of the mark — outline-only and white-filled — with a viewBox that frames the first and leaves the second off-canvas. `scripts/build_brand.ts` finds the outline copy by rendering each element and keeping the upper band, then writes `components/brand/mark.ts`, `public/icon*.png|svg`, `public/apple-touch-icon.png` and `app/favicon.ico`. Never hand-edit those; replace the export and rerun `npm run brand:build`. The mark is fine line art and greys out below ~32px, so `components/Logo.tsx` is used at `h-8` and no smaller, and the 32px favicon is cropped tighter than the other tiles.
 - **`data/map-geometry.json` is generated — never hand-edit it.** Fix geometry in `data/map-overrides.json` or the scoring in `scripts/build_map_geometry.ts`, then rerun `npm run map:build`. `tests/map-geometry.test.ts` fails if the build had to drag any polyline more than 25 px to reach its station — a long reach means the edge was routed somewhere else entirely and needs a hand-authored polyline, not a snap.
 
 ## Data flow

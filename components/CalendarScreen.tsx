@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { CalendarResponse, DayStatus } from "@/lib/types";
 import { STATIONS } from "@/lib/network/build";
+import Logo from "./Logo";
 import StationSearch from "./StationSearch";
 import BottomSheet from "./BottomSheet";
 import DisruptionCard from "./DisruptionCard";
@@ -98,9 +99,14 @@ export default function CalendarScreen() {
     <div className="flex h-full flex-col">
       <header className="shrink-0 border-b border-hairline bg-elevated/95 px-4 pt-[calc(env(safe-area-inset-top)+10px)] pb-3 backdrop-blur">
         <div className="mx-auto max-w-md">
-          <h1 className="mb-2 text-[15px] font-extrabold leading-tight tracking-tight">
-            Disruptions by station
-          </h1>
+          {/* Same mark, size and position as the Map header, so the two read as
+              one app rather than two screens that happen to share a tab bar. */}
+          <div className="mb-2 flex items-center gap-2.5">
+            <Logo className="h-8 w-auto shrink-0 text-ink" />
+            <h1 className="text-[15px] font-extrabold leading-tight tracking-tight">
+              Disruptions by station
+            </h1>
+          </div>
           <StationSearch value={stationId} onChange={setStation} />
         </div>
       </header>
