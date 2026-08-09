@@ -1,8 +1,12 @@
 name: Refresh disruption data
 
 on:
-  schedule:
-    - cron: "17 19 */2 * *" # every 2 days ~05:17 Melbourne time
+  # Scheduled runs disabled 2026-08-10: transport.vic.gov.au now returns 403
+  # to GitHub Actions' shared-runner IPs (Cloudflare IP-reputation block, not
+  # the TLS-fingerprint issue this workflow was built to route around -- see
+  # AGENTS.md). Scraping now runs from a local Windows Scheduled Task instead
+  # (scripts/scrape-local.ps1 + scripts/register-scrape-task.ps1). Kept as
+  # workflow_dispatch only in case the block ever lifts.
   workflow_dispatch:
 
 permissions:
