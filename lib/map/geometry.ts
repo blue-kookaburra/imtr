@@ -30,6 +30,9 @@ export interface LabelPlacement {
   dx: number;
   dy: number;
   anchor: LabelAnchor;
+  // Tilt to follow a steep diagonal line (non-interchange stations only) —
+  // set by build_map_geometry.ts, absent otherwise.
+  angle?: number;
 }
 
 export const LABEL_PLACEMENT = geometry.labels as unknown as Record<string, LabelPlacement>;
