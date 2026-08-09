@@ -15,7 +15,8 @@ npm run dev          # dev server
 npm run build        # production build (Turbopack)
 npm test             # vitest run — all tests
 npx vitest run tests/parse.test.ts -t "article"   # single test by name filter
-npm run scrape       # refresh data/disruptions.json (needs curl on PATH)
+npm run scrape       # refresh data/disruptions.json (needs curl on PATH; 403s from non-residential IPs — see Critical constraints)
+powershell -File scripts\scrape-local.ps1   # scrape + test + commit + push, what the scheduled task runs
 python scripts/extract_map.py   # regenerate docs/network-map.png + station/edge coords from docs/official-map.pdf
 npm run map:build    # rebuild data/map-geometry.json from extracted coords + hand overrides
 npm run brand:build  # rebuild the logo mark + every app icon from docs/brand/
@@ -25,7 +26,7 @@ Deploy: push to `main` (repo github.com/blue-kookaburra/imtr, connected to Verce
 
 ## Critical constraints (learned the hard way)
 
-- **transport.vic.gov.au fingerprints TLS.** Node fetch gets 403 even with full browser headers; plain `curl` passes. All scraping therefore happens in GitHub Actions (`.github/workflows/scrape.yml`, every 2 days) via `scripts/scrape.ts`, which shells out to curl and commits `data/disruptions.json`. Never move scraping into Next.js runtime/serverless — it will 403 on Vercel.
+- **transport.vic.gov.au fingerprints TLS *and* blocks cloud/CI IP ranges.** Node fetch gets 403 even with full browser headers; plain `curl` passes — but only from a residential IP. Vercel's IPs 403; as of 2026-08-01 GitHub Actions' shared-runner IPs started 403ing too (Cloudflare tightening cloud-IP reputation, confirmed via `workflow_dispatch` with curl's real error surfaced). Scraping therefore runs from a **local Windows Scheduled Task** (`scripts/scrape-local.ps1`, registered by `scripts/register-scrape-task.ps1`, every 2 days) via `scripts/scrape.ts`, which shells out to curl and commits+pushes `data/disruptions.json`. `.github/workflows/scrape.yml` is kept as `workflow_dispatch`-only in case the block ever lifts — never re-enable its cron or move scraping into Next.js runtime/serverless without testing from that host's actual egress IP first.
 - **The official map PDF has no text layer.** `scripts/extract_map.py` OCRs station labels (Tesseract at `C:\Program Files\Tesseract-OCR`), snaps them to colour-matched vector paths, and Dijkstra-routes every edge along the drawn artwork. Rerun only when a new map edition lands in `docs/official-map.pdf`.
 - **Fail-visible principle.** Anything the parser can't confidently map to track segments renders as a line-level ⚠ warning — never a possibly-wrong blackout, never a false "all clear". Preserve this in any parser/merge change.
 - **The logo lives in `docs/brand/`, and everything shipped from it is generated.** `train-mark-outline.svg` is an Illustrator export holding **two** stacked copies of the mark — outline-only and white-filled — with a viewBox that frames the first and leaves the second off-canvas. `scripts/build_brand.ts` finds the outline copy by rendering each element and keeping the upper band, then writes `components/brand/mark.ts`, `public/icon*.png|svg`, `public/apple-touch-icon.png` and `app/favicon.ico`. Never hand-edit those; replace the export and rerun `npm run brand:build`. The mark is fine line art and greys out below ~32px, so `components/Logo.tsx` is used at `h-8` and no smaller, and the 32px favicon is cropped tighter than the other tiles.
