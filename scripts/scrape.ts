@@ -14,16 +14,20 @@ const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
 function curl(url: string, attempts = 3): string | null {
+  let lastErr: unknown;
   for (let i = 0; i < attempts; i++) {
     try {
-      return execFileSync("curl", ["-sfL", "--max-time", "30", "-A", UA, url], {
+      return execFileSync("curl", ["-sSfL", "--max-time", "30", "-A", UA, url], {
         encoding: "utf-8",
         maxBuffer: 20 * 1024 * 1024,
       });
-    } catch {
+    } catch (err) {
+      lastErr = err;
       if (i < attempts - 1) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
     }
   }
+  const e = lastErr as { status?: number; stderr?: string } | undefined;
+  console.error(`curl failed for ${url}: exit ${e?.status} ${e?.stderr?.toString().trim()}`);
   return null;
 }
 
