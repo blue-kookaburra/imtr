@@ -13,10 +13,13 @@ interface Props {
 // Past this zoom every station is named; below it only the ones that earn it.
 const REVEAL_ZOOM = 0.6;
 
+// Only the outer (suburban) end -- index 0 is always the city anchor
+// (flinders-street or southern-cross) by construction, per AGENTS.md's
+// network-model section, so checking it too would bold-cap the CBD hubs.
 function isLineEnd(stationId: string, lineId: LineId): boolean {
   const line = LINE_BY_ID.get(lineId);
   if (!line) return false;
-  return line.stations[0] === stationId || line.stations[line.stations.length - 1] === stationId;
+  return line.stations[line.stations.length - 1] === stationId;
 }
 
 export default function MapLabels({ statusByStation, focusedLine, zoom }: Props) {
@@ -61,14 +64,20 @@ export default function MapLabels({ statusByStation, focusedLine, zoom }: Props)
             y={xy[1] + place.dy}
             textAnchor={place.anchor}
             dominantBaseline={place.dy > 4 ? "hanging" : place.dy < -4 ? "auto" : "middle"}
+            transform={
+              place.angle
+                ? `rotate(${place.angle} ${xy[0] + place.dx} ${xy[1] + place.dy})`
+                : undefined
+            }
             fontSize={s.interchange ? 15 : 13}
-            fontWeight={s.interchange || disrupted ? 700 : 500}
+            fontWeight={s.interchange || disrupted || isTerminus ? 700 : 500}
             fill={disrupted ? "var(--bad)" : "var(--map-label)"}
             opacity={ghosted ? 0.35 : 1}
             paintOrder="stroke"
             stroke="var(--map-canvas)"
             strokeWidth={4}
             strokeLinejoin="round"
+            style={isTerminus ? { textTransform: "uppercase" } : undefined}
             className="pointer-events-none select-none transition-opacity duration-200"
           >
             {s.name}

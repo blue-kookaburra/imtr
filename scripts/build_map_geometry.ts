@@ -9,7 +9,7 @@
 
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { EDGES } from "../lib/network/build";
+import { EDGES, STATIONS } from "../lib/network/build";
 
 type XY = [number, number];
 
@@ -80,6 +80,33 @@ interface LabelPlacement {
   dx: number;
   dy: number;
   anchor: Anchor;
+  angle?: number;
+}
+
+// Tilt a label to follow its line on steep diagonal runs (poster does this
+// on the Craigieburn/Sunbury/Hurstbridge arms) instead of always horizontal.
+// Interchanges keep their name horizontal even on a diagonal, matching the
+// poster's treatment of named hubs.
+const LABEL_ANGLE_THRESHOLD = 30;
+
+function angleAt(pts: XY[], atStart: boolean): number {
+  const a = atStart ? pts[0] : pts[pts.length - 1];
+  const b = atStart ? pts[1] : pts[pts.length - 2];
+  let deg = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
+  if (deg > 90) deg -= 180;
+  if (deg < -90) deg += 180;
+  return deg;
+}
+
+function computeLabelAngles(edges: Record<string, XY[]>): Record<string, number> {
+  const angle: Record<string, number> = {};
+  for (const e of EDGES) {
+    const pts = edges[e.id];
+    if (!pts || pts.length < 2) continue;
+    if (!(e.from in angle)) angle[e.from] = angleAt(pts, true);
+    if (!(e.to in angle)) angle[e.to] = angleAt(pts, false);
+  }
+  return angle;
 }
 
 // Eight candidate directions at a fixed radius. Right and left first — a name
@@ -221,7 +248,26 @@ function build() {
     .filter((id) => !rendered.has(id))
     .sort();
 
-  const labels = { ...placeLabels(stations, edges, rendered), ...LABEL_OVERRIDES };
+  const labels: Record<string, LabelPlacement> = {
+    ...placeLabels(stations, edges, rendered),
+    ...LABEL_OVERRIDES,
+  };
+  const labelAngles = computeLabelAngles(edges);
+  for (const id of Object.keys(labels)) {
+    const angle = labelAngles[id];
+    if (angle === undefined || Math.abs(angle) < LABEL_ANGLE_THRESHOLD) continue;
+    if (STATIONS.get(id)?.interchange) continue;
+    labels[id] = { ...labels[id], angle: Math.round(angle) };
+  }
+
+  // Unfiltered local track angle for every rendered station -- unlike
+  // labelAngles (thresholded, non-interchange only), this covers every
+  // station so interchange capsules can be drawn perpendicular to the
+  // track bundle they sit on, poster-style.
+  const stationAngle: Record<string, number> = {};
+  for (const id of Object.keys(labelAngles)) {
+    stationAngle[id] = Math.round(labelAngles[id]);
+  }
 
   const out = {
     width: extracted.width,
@@ -230,6 +276,7 @@ function build() {
     edges,
     snapped,
     labels,
+    stationAngle,
     rendered: [...rendered].sort(),
     orphans,
   };

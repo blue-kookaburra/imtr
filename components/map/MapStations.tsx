@@ -1,7 +1,7 @@
 "use client";
 
 import { STATIONS } from "@/lib/network/build";
-import { RENDERED_STATIONS, STATION_XY } from "@/lib/map/geometry";
+import { RENDERED_STATIONS, STATION_ANGLE, STATION_XY } from "@/lib/map/geometry";
 import type { LineId, StationStatus } from "@/lib/types";
 
 interface Props {
@@ -14,6 +14,13 @@ interface Props {
 // (k≈0.24) — station density at overview zoom makes bigger targets impossible;
 // it reaches the comfortable 44 CSS px once zoomed past k≈0.85.
 const HIT_R = 26;
+
+// Poster draws interchanges as an elongated pill crossing the track bundle
+// (stitching the parallel lines together) rather than a plain dot. Purely
+// decorative, drawn behind the existing status circles so their colouring
+// is untouched.
+const CAPSULE_LEN = 28;
+const CAPSULE_W = 13;
 
 export default function MapStations({ statusByStation, focusedLine, onSelectStation }: Props) {
   return (
@@ -44,6 +51,19 @@ export default function MapStations({ statusByStation, focusedLine, onSelectStat
 
         return (
           <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200 motion-reduce:transition-none">
+            {s.interchange && (
+              <rect
+                x={xy[0] - CAPSULE_LEN / 2}
+                y={xy[1] - CAPSULE_W / 2}
+                width={CAPSULE_LEN}
+                height={CAPSULE_W}
+                rx={CAPSULE_W / 2}
+                fill="var(--map-station-fill)"
+                stroke="var(--map-station-stroke)"
+                strokeWidth={3}
+                transform={`rotate(${(STATION_ANGLE[s.id] ?? 0) + 90} ${xy[0]} ${xy[1]})`}
+              />
+            )}
             {st === "cut" && (
               <circle
                 cx={xy[0]}

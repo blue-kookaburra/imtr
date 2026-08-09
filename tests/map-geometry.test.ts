@@ -19,10 +19,6 @@ import {
 // straight teleport. Values are the measured reach; the test allows 2px of
 // drift so a tick cannot silently grow into a teleport.
 const ACCEPTED_LANE_TICKS: Record<string, number> = {
-  "belgrave:flinders-street-richmond": 42.8,
-  "lilydale:flinders-street-richmond": 42.8,
-  "alamein:flinders-street-richmond": 42.8,
-  "glen-waverley:flinders-street-richmond": 42.8,
   "mernda:flinders-street-jolimont": 57.4,
   "hurstbridge:flinders-street-jolimont": 57.4,
   "craigieburn:flinders-street-southern-cross": 71.2,

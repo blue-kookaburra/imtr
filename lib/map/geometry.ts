@@ -33,3 +33,7 @@ export interface LabelPlacement {
 }
 
 export const LABEL_PLACEMENT = geometry.labels as unknown as Record<string, LabelPlacement>;
+
+// Local track angle (degrees, -90..90) at each rendered station. Used to
+// orient interchange capsules perpendicular to the bundle they sit on.
+export const STATION_ANGLE = geometry.stationAngle as unknown as Record<string, number>;
