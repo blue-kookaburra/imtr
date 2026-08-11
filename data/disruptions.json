@@ -162,6 +162,36 @@
       "endTs": "2026-08-16T17:00:00.000Z"
     },
     {
+      "id": "art-367779",
+      "lineIds": [
+        "pakenham"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Coaches replace evening trains for the entire journey from Monday 17 August to Wednesday 19 August 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/gippsland-line-coaches-replace-evening-trains-for-the-entire-journey-from-monday-17-august-to-wednesday-19-august-2026",
+      "startDate": "2026-08-17",
+      "endDate": "2026-08-20",
+      "startTs": "2026-08-17T08:00:00.000Z",
+      "endTs": "2026-08-19T17:00:00.000Z"
+    },
+    {
+      "id": "art-367780",
+      "lineIds": [
+        "pakenham"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Coaches replace evening trains for the entire journey from Monday 24 August to Wednesday 26 August 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/gippsland-line-coaches-replace-evening-trains-for-the-entire-journey-from-monday-24-august-to-wednesday-26-august-2026",
+      "startDate": "2026-08-24",
+      "endDate": "2026-08-27",
+      "startTs": "2026-08-24T08:00:00.000Z",
+      "endTs": "2026-08-26T17:00:00.000Z"
+    },
+    {
       "id": "art-366830",
       "lineIds": [
         "werribee",
@@ -182,6 +212,26 @@
       "startDate": "2026-08-10",
       "endDate": "2026-08-12",
       "startMin": 1200
+    },
+    {
+      "id": "art-366434",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Thursday 13 August 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-thursday-13-august-2026",
+      "startDate": "2026-08-13",
+      "endDate": "2026-08-13",
+      "startMin": 1430
     },
     {
       "id": "art-367159",
@@ -331,138 +381,9 @@
       "rawText": "Buses replace trains between Footscray and Sunbury.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "d6c57q5",
-      "lineIds": [
-        "belgrave"
-      ],
-      "fromStation": "bayswater",
-      "toStation": "belgrave",
-      "stations": [
-        "bayswater",
-        "belgrave"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-27",
-      "endDate": "2026-07-27",
-      "rawText": "Buses replace trains between Bayswater and Belgrave.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
-      "id": "dupbl94",
-      "lineIds": [
-        "belgrave"
-      ],
-      "fromStation": "bayswater",
-      "toStation": "belgrave",
-      "stations": [
-        "bayswater",
-        "belgrave"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-07-27",
-      "endDate": "2026-08-03",
-      "rawText": "Buses replace trains between Bayswater and Belgrave.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
-      "id": "dwztrr5",
-      "lineIds": [
-        "mernda"
-      ],
-      "fromStation": "clifton-hill",
-      "toStation": "mernda",
-      "stations": [
-        "clifton-hill",
-        "mernda"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-07",
-      "endDate": "2026-08-09",
-      "rawText": "Buses replace trains between Clifton Hill and Mernda .",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
-    },
-    {
-      "id": "d1kyotoh",
-      "lineIds": [
-        "mernda"
-      ],
-      "fromStation": "clifton-hill",
-      "toStation": "mernda",
-      "stations": [
-        "clifton-hill",
-        "mernda"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-07",
-      "endDate": "2026-08-09",
-      "rawText": "Buses replace trains between Clifton Hill and Mernda.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
-    },
-    {
-      "id": "d18efzxj",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-03",
-      "endDate": "2026-08-06",
-      "rawText": "Buses replace trains from Newport to Werribee .",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "d1y0ry3f",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": false,
-      "startDate": "2026-08-02",
-      "endDate": "2026-08-05",
-      "startMin": 1260,
-      "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "d1gfx0yu",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-13",
-      "endDate": "2026-08-13",
-      "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-08-09T22:51:03.674Z",
+  "fetchedAt": "2026-08-11T21:37:51.714Z",
   "pagesTried": 10,
-  "pagesOk": 9
+  "pagesOk": 10
 }
