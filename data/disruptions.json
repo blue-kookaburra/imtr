@@ -201,7 +201,7 @@
       "toStation": "williamstown",
       "stations": [
         "north-melbourne",
-        "newport",
+        "werribee",
         "williamstown"
       ],
       "wholeLine": false,
@@ -421,7 +421,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-08-13T21:14:20.944Z",
+  "fetchedAt": "2026-08-16T04:05:49.061Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
