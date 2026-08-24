@@ -64,27 +64,6 @@
       "endTs": "2026-09-06T17:00:00.000Z"
     },
     {
-      "id": "art-367302",
-      "lineIds": [
-        "belgrave"
-      ],
-      "fromStation": "bayswater",
-      "toStation": "belgrave",
-      "stations": [
-        "bayswater",
-        "belgrave"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm Friday 21 August to last service Sunday 23 August 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-line-buses-replace-trains-from-8-30pm-friday-21-august-to-last-service-sunday-23-august-2026",
-      "startDate": "2026-08-21",
-      "endDate": "2026-08-24",
-      "startTs": "2026-08-21T10:30:00.000Z",
-      "endTs": "2026-08-23T17:00:00.000Z"
-    },
-    {
       "id": "art-367780",
       "lineIds": [
         "pakenham"
@@ -302,6 +281,25 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
     {
+      "id": "d140tmb",
+      "lineIds": [
+        "belgrave"
+      ],
+      "fromStation": "bayswater",
+      "toStation": "belgrave",
+      "stations": [
+        "bayswater",
+        "belgrave"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-08-21",
+      "endDate": "2026-08-21",
+      "rawText": "Buses replace trains between Bayswater and Belgrave.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
+    },
+    {
       "id": "d158z9xv",
       "lineIds": [
         "sandringham"
@@ -363,7 +361,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-08-19T23:15:37.076Z",
+  "fetchedAt": "2026-08-24T08:12:02.814Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
