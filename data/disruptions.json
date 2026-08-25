@@ -34,7 +34,7 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 23 August to Wednesday 26 August 2026",
+      "rawText": "Buses replace trains from 8:30pm to last service each night, Sunday 23 August to Wednesday 26 August 2026",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sunbury-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-23-august-to-wednesday-26-august-2026",
       "startDate": "2026-08-23",
@@ -62,6 +62,27 @@
       "endDate": "2026-09-07",
       "startTs": "2026-09-06T11:00:00.000Z",
       "endTs": "2026-09-06T17:00:00.000Z"
+    },
+    {
+      "id": "art-368588",
+      "lineIds": [
+        "belgrave",
+        "lilydale"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "burnley",
+      "stations": [
+        "flinders-street",
+        "burnley"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Train services start and end at Burnley from 9pm to last service each night, Monday 21 September to Wednesday 23 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-train-services-start-and-end-at-burnley-from-9pm-to-last-service-each-night-monday-21-september-to-wednesday-23-september-2026",
+      "startDate": "2026-09-21",
+      "endDate": "2026-09-23",
+      "startMin": 1260
     },
     {
       "id": "art-367780",
@@ -158,6 +179,26 @@
       "endTs": "2026-08-31T17:00:00.000Z"
     },
     {
+      "id": "art-368759",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.50pm to last service on each night, Wednesday 2 September to Thursday 3 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-on-each-night-wednesday-2-september-to-thursday-3-september-2026",
+      "startDate": "2026-09-02",
+      "endDate": "2026-09-03",
+      "startMin": 1430
+    },
+    {
       "id": "art-368149",
       "lineIds": [
         "werribee",
@@ -178,6 +219,26 @@
       "startDate": "2026-09-07",
       "endDate": "2026-09-09",
       "startMin": 1260
+    },
+    {
+      "id": "art-368762",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Monday 21 September to Wednesday 23 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-monday-21-september-to-wednesday-23-september-2026",
+      "startDate": "2026-09-21",
+      "endDate": "2026-09-23",
+      "startMin": 1430
     },
     {
       "id": "d1cqe2hi",
@@ -281,25 +342,6 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
     {
-      "id": "d140tmb",
-      "lineIds": [
-        "belgrave"
-      ],
-      "fromStation": "bayswater",
-      "toStation": "belgrave",
-      "stations": [
-        "bayswater",
-        "belgrave"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-21",
-      "endDate": "2026-08-21",
-      "rawText": "Buses replace trains between Bayswater and Belgrave.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
       "id": "d158z9xv",
       "lineIds": [
         "sandringham"
@@ -317,51 +359,9 @@
       "rawText": "Buses replace trains between Parliament and Elsternwick",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/sandringham-line-disruptions"
-    },
-    {
-      "id": "doacaap",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-17",
-      "endDate": "2026-08-19",
-      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown .",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "d1ge7oo1",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-17",
-      "endDate": "2026-08-19",
-      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-08-24T08:12:02.814Z",
+  "fetchedAt": "2026-08-25T21:04:03.602Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
