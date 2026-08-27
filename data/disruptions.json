@@ -1,45 +1,27 @@
 {
   "disruptions": [
     {
-      "id": "art-367267",
+      "id": "art-368550",
       "lineIds": [
         "pakenham",
         "cranbourne"
       ],
-      "fromStation": "flinders-street",
-      "toStation": "caulfield",
+      "fromStation": "westall",
+      "toStation": "east-pakenham",
       "stations": [
-        "flinders-street",
-        "caulfield"
+        "westall",
+        "cranbourne",
+        "east-pakenham"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Train services start and end at Caulfield from 9pm to last service each night, Sunday 23 August to Wednesday 26 August 2026",
+      "rawText": "Buses replace trains from 11pm Friday 4 September to last service Sunday 6 September 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-train-services-start-and-end-at-caulfield-from-9pm-to-last-service-each-night-sunday-23-august-to-wednesday-26-august-2026",
-      "startDate": "2026-08-23",
-      "endDate": "2026-08-26",
-      "startMin": 1260
-    },
-    {
-      "id": "art-367664",
-      "lineIds": [
-        "sunbury"
-      ],
-      "fromStation": "footscray",
-      "toStation": "sunbury",
-      "stations": [
-        "footscray",
-        "sunbury"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8:30pm to last service each night, Sunday 23 August to Wednesday 26 August 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sunbury-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-23-august-to-wednesday-26-august-2026",
-      "startDate": "2026-08-23",
-      "endDate": "2026-08-26",
-      "startMin": 1230
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-buses-replace-trains-from-11pm-friday-4-september-to-last-service-sunday-6-september-2026",
+      "startDate": "2026-09-04",
+      "endDate": "2026-09-07",
+      "startTs": "2026-09-04T13:00:00.000Z",
+      "endTs": "2026-09-06T17:00:00.000Z"
     },
     {
       "id": "art-368151",
@@ -64,6 +46,26 @@
       "endTs": "2026-09-06T17:00:00.000Z"
     },
     {
+      "id": "art-368552",
+      "lineIds": [
+        "sunbury"
+      ],
+      "fromStation": "footscray",
+      "toStation": "sunshine",
+      "stations": [
+        "footscray",
+        "sunshine"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8pm to last service each night, Sunday 6 September to Wednesday 9 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sunbury-line-buses-replace-trains-from-8pm-to-last-service-each-night-sunday-6-september-to-wednesday-9-september-2026",
+      "startDate": "2026-09-06",
+      "endDate": "2026-09-09",
+      "startMin": 1200
+    },
+    {
       "id": "art-368588",
       "lineIds": [
         "belgrave",
@@ -85,39 +87,24 @@
       "startMin": 1260
     },
     {
-      "id": "art-367780",
+      "id": "art-368548",
       "lineIds": [
-        "pakenham"
+        "sandringham"
       ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Coaches replace evening trains for the entire journey from Monday 24 August to Wednesday 26 August 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/gippsland-line-coaches-replace-evening-trains-for-the-entire-journey-from-monday-24-august-to-wednesday-26-august-2026",
-      "startDate": "2026-08-24",
-      "endDate": "2026-08-27",
-      "startTs": "2026-08-24T08:00:00.000Z",
-      "endTs": "2026-08-26T17:00:00.000Z"
-    },
-    {
-      "id": "art-366436",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
+      "fromStation": "parliament",
+      "toStation": "elsternwick",
       "stations": [
-        "newport",
-        "werribee"
+        "parliament",
+        "elsternwick"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service each night,  Monday 24 August to Thursday 27 August 2026",
+      "rawText": "Buses replace trains from 8.45pm to last service each night, Monday 7 September to Wednesday 9 September 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-monday-24-august-to-thursday-27-august-2026",
-      "startDate": "2026-08-24",
-      "endDate": "2026-08-27",
-      "startMin": 1430
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sandringham-line-buses-replace-trains-from-8-45pm-to-last-service-each-night-monday-7-september-to-wednesday-9-september-2026",
+      "startDate": "2026-09-07",
+      "endDate": "2026-09-09",
+      "startMin": 1245
     },
     {
       "id": "art-367151",
@@ -241,42 +228,21 @@
       "startMin": 1430
     },
     {
-      "id": "d1cqe2hi",
+      "id": "d15xfybm",
       "lineIds": [
         "sunbury"
       ],
-      "fromStation": "north-melbourne",
-      "toStation": "sunshine",
+      "fromStation": "footscray",
+      "toStation": "sunbury",
       "stations": [
-        "north-melbourne",
-        "sunshine"
+        "footscray",
+        "sunbury"
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-08-17",
-      "endDate": "2026-08-19",
-      "rawText": "Buses replace trains between North Melbourne and Sunshine.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "d1twj1b6",
-      "lineIds": [
-        "sunbury",
-        "pakenham",
-        "cranbourne"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "sunshine",
-      "stations": [
-        "north-melbourne",
-        "sunshine"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-08-17",
-      "endDate": "2026-08-19",
-      "rawText": "Buses replace trains between North Melbourne and Sunshine.",
+      "startDate": "2026-08-23",
+      "endDate": "2026-08-26",
+      "rawText": "Buses replace trains between Footscray and Sunbury.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
@@ -323,45 +289,26 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
     {
-      "id": "dhboprv",
+      "id": "dqs1zkd",
       "lineIds": [
-        "sunbury"
+        "werribee"
       ],
-      "fromStation": "footscray",
-      "toStation": "sunshine",
+      "fromStation": "newport",
+      "toStation": "werribee",
       "stations": [
-        "footscray",
-        "sunshine"
+        "newport",
+        "werribee"
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-09-06",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between Footscray and Sunshine.",
+      "startDate": "2026-08-24",
+      "endDate": "2026-08-27",
+      "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "d158z9xv",
-      "lineIds": [
-        "sandringham"
-      ],
-      "fromStation": "parliament",
-      "toStation": "elsternwick",
-      "stations": [
-        "parliament",
-        "elsternwick"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-07",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between Parliament and Elsternwick",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/sandringham-line-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-08-25T21:04:03.602Z",
+  "fetchedAt": "2026-08-27T21:38:23.182Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
