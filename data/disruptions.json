@@ -134,26 +134,6 @@
       "startMin": 1245
     },
     {
-      "id": "art-368759",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service on each night, Wednesday 2 September to Thursday 3 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-on-each-night-wednesday-2-september-to-thursday-3-september-2026",
-      "startDate": "2026-09-02",
-      "endDate": "2026-09-03",
-      "startMin": 1430
-    },
-    {
       "id": "art-368149",
       "lineIds": [
         "werribee",
@@ -194,28 +174,6 @@
       "startDate": "2026-09-07",
       "endDate": "2026-09-09",
       "startMin": 1430
-    },
-    {
-      "id": "art-369081",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 13 September to Wednesday 16 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-and-williamstown-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-13-september-to-wednesday-16-september-2026",
-      "startDate": "2026-09-13",
-      "endDate": "2026-09-16",
-      "startMin": 1230
     },
     {
       "id": "art-369122",
@@ -317,7 +275,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
     {
-      "id": "d48uyg0",
+      "id": "dhvs9me",
       "lineIds": [
         "sunbury",
         "pakenham",
@@ -325,14 +283,54 @@
       ],
       "wholeLine": false,
       "parsed": false,
-      "startDate": "2026-09-01",
-      "endDate": "2026-09-01",
-      "rawText": "Buses replace trains between Dandenong and Cranbourne Sunbury passengers Tuesday 1 September until further notice Buses replace trains between Watergardens and Sunbury Sunbury passengers Sunday 6 September to Wednesday 9 September Buses replace trains between Footscray and Sunshine Cranbourne and Pakenham passengers Monday 7 September to Wednesday 9 September Buses replace trains between city and Caulfield",
+      "startDate": "2026-09-06",
+      "endDate": "2026-09-09",
+      "rawText": "Buses replace trains between Footscray and Sunshine Cranbourne and Pakenham passengers Monday 7 September to Wednesday 9 September Buses replace trains between city and Caulfield",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
+    },
+    {
+      "id": "d9li3yc",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-09-02",
+      "endDate": "2026-09-02",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
+    },
+    {
+      "id": "d10xl54s",
+      "lineIds": [
+        "werribee",
+        "williamstown"
+      ],
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
+      "stations": [
+        "north-melbourne",
+        "newport",
+        "williamstown"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-09-13",
+      "endDate": "2026-09-16",
+      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-09-02T21:40:41.568Z",
+  "fetchedAt": "2026-09-06T10:55:51.671Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
