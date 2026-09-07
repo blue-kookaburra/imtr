@@ -1,49 +1,28 @@
 {
   "disruptions": [
     {
-      "id": "art-368550",
+      "id": "art-369215",
       "lineIds": [
         "pakenham",
-        "cranbourne"
-      ],
-      "fromStation": "westall",
-      "toStation": "east-pakenham",
-      "stations": [
-        "westall",
         "cranbourne",
-        "east-pakenham"
+        "frankston"
       ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 11pm Friday 4 September to last service Sunday 6 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-buses-replace-trains-from-11pm-friday-4-september-to-last-service-sunday-6-september-2026",
-      "startDate": "2026-09-04",
-      "endDate": "2026-09-07",
-      "startTs": "2026-09-04T13:00:00.000Z",
-      "endTs": "2026-09-06T17:00:00.000Z"
-    },
-    {
-      "id": "art-368151",
-      "lineIds": [
-        "pakenham",
-        "cranbourne"
-      ],
-      "fromStation": "flinders-street",
-      "toStation": "caulfield",
+      "fromStation": "parkville",
+      "toStation": "anzac",
       "stations": [
-        "flinders-street",
-        "caulfield"
+        "parkville",
+        "state-library",
+        "town-hall",
+        "anzac"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Train services start and end at Caulfield from 9pm to last service on Sunday 6 September 2026",
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 7 September to Wednesday 9 September 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-train-services-start-and-end-at-caulfield-from-9pm-to-last-service-on-sunday-6-september-2026",
-      "startDate": "2026-09-06",
-      "endDate": "2026-09-07",
-      "startTs": "2026-09-06T11:00:00.000Z",
-      "endTs": "2026-09-06T17:00:00.000Z"
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/frankston-cranbourne-and-pakenham-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-7-september-to-wednesday-9-september-2026",
+      "startDate": "2026-09-07",
+      "endDate": "2026-09-09",
+      "startMin": 1230
     },
     {
       "id": "art-368552",
@@ -69,28 +48,50 @@
       "startMin": 1200
     },
     {
-      "id": "art-369215",
+      "id": "art-369532",
       "lineIds": [
-        "pakenham",
-        "cranbourne",
-        "frankston"
+        "belgrave",
+        "lilydale"
       ],
-      "fromStation": "parkville",
-      "toStation": "anzac",
+      "fromStation": "blackburn",
+      "toStation": "lilydale",
       "stations": [
-        "parkville",
-        "state-library",
-        "town-hall",
-        "anzac"
+        "blackburn",
+        "belgrave",
+        "lilydale"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 7 September to Wednesday 9 September 2026",
+      "rawText": "Buses replace trains from 8.30pm Friday 18 September to 3am Sunday 20 September 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/frankston-cranbourne-and-pakenham-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-7-september-to-wednesday-9-september-2026",
-      "startDate": "2026-09-07",
-      "endDate": "2026-09-09",
-      "startMin": 1230
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-friday-18-september-to-3am-sunday-20-september-2026",
+      "startDate": "2026-09-18",
+      "endDate": "2026-09-20",
+      "startTs": "2026-09-18T10:30:00.000Z",
+      "endTs": "2026-09-19T17:01:00.000Z"
+    },
+    {
+      "id": "art-369533",
+      "lineIds": [
+        "belgrave",
+        "lilydale"
+      ],
+      "fromStation": "box-hill",
+      "toStation": "lilydale",
+      "stations": [
+        "box-hill",
+        "belgrave",
+        "lilydale"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 3am until last service Sunday 20 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-buses-replace-trains-from-3am-until-last-service-sunday-20-september-2026",
+      "startDate": "2026-09-20",
+      "endDate": "2026-09-21",
+      "startTs": "2026-09-19T17:01:00.000Z",
+      "endTs": "2026-09-20T17:00:00.000Z"
     },
     {
       "id": "art-368588",
@@ -112,6 +113,48 @@
       "startDate": "2026-09-21",
       "endDate": "2026-09-23",
       "startMin": 1260
+    },
+    {
+      "id": "art-369522",
+      "lineIds": [
+        "belgrave",
+        "lilydale",
+        "alamein"
+      ],
+      "fromStation": "parliament",
+      "toStation": "camberwell",
+      "stations": [
+        "parliament",
+        "camberwell"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 27 September to Wednesday 30 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-27-september-to-wednesday-30-september-2026",
+      "startDate": "2026-09-27",
+      "endDate": "2026-09-30",
+      "startMin": 1230
+    },
+    {
+      "id": "art-369524",
+      "lineIds": [
+        "glen-waverley"
+      ],
+      "fromStation": "richmond",
+      "toStation": "glen-waverley",
+      "stations": [
+        "richmond",
+        "glen-waverley"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.15pm to last service each night, Sunday 27 September to Wednesday 30 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/glen-waverley-line-buses-replace-trains-from-8-15pm-to-last-service-each-night-sunday-27-september-to-wednesday-30-september-2026",
+      "startDate": "2026-09-27",
+      "endDate": "2026-09-30",
+      "startMin": 1215
     },
     {
       "id": "art-368548",
@@ -176,6 +219,28 @@
       "startMin": 1430
     },
     {
+      "id": "art-369081",
+      "lineIds": [
+        "werribee",
+        "williamstown"
+      ],
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
+      "stations": [
+        "north-melbourne",
+        "newport",
+        "williamstown"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 13 September to Wednesday 16 September 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-and-williamstown-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-13-september-to-wednesday-16-september-2026",
+      "startDate": "2026-09-13",
+      "endDate": "2026-09-16",
+      "startMin": 1230
+    },
+    {
       "id": "art-369122",
       "lineIds": [
         "werribee"
@@ -237,57 +302,20 @@
       "startMin": 1430
     },
     {
-      "id": "d1nk839p",
+      "id": "d155b687",
       "lineIds": [
-        "cranbourne"
-      ],
-      "fromStation": "dandenong",
-      "toStation": "cranbourne",
-      "stations": [
-        "dandenong",
-        "cranbourne"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-01",
-      "endDate": "2026-09-01",
-      "rawText": "Buses replace trains between Dandenong and Cranbourne",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "d1k22uhk",
-      "lineIds": [
-        "sunbury"
-      ],
-      "fromStation": "watergardens",
-      "toStation": "sunbury",
-      "stations": [
-        "watergardens",
-        "sunbury"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-01",
-      "endDate": "2026-09-01",
-      "rawText": "Buses replace trains between Watergardens and Sunbury",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "dhvs9me",
-      "lineIds": [
-        "sunbury",
-        "pakenham",
-        "cranbourne"
+        "belgrave",
+        "lilydale",
+        "alamein",
+        "glen-waverley"
       ],
       "wholeLine": false,
       "parsed": false,
-      "startDate": "2026-09-06",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between Footscray and Sunshine Cranbourne and Pakenham passengers Monday 7 September to Wednesday 9 September Buses replace trains between city and Caulfield",
+      "startDate": "2026-09-27",
+      "endDate": "2026-09-30",
+      "rawText": "Buses replace trains between Parliament and Camberwell Glen Waverley passengers Sunday 27 September to Wednesday 30 September Buses replace trains between Parliament and Camberwell",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
       "id": "d9li3yc",
@@ -307,30 +335,9 @@
       "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
-    },
-    {
-      "id": "d10xl54s",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-13",
-      "endDate": "2026-09-16",
-      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-09-06T10:55:51.671Z",
+  "fetchedAt": "2026-09-07T07:34:06.030Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
