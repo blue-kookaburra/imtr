@@ -17,7 +17,7 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 7 September to Wednesday 9 September 2026",
+      "rawText": "Buses replace trains from 8:30pm to last service each night, Monday 7 September to Wednesday 9 September 2026",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/frankston-cranbourne-and-pakenham-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-7-september-to-wednesday-9-september-2026",
       "startDate": "2026-09-07",
@@ -155,6 +155,26 @@
       "startDate": "2026-09-27",
       "endDate": "2026-09-30",
       "startMin": 1215
+    },
+    {
+      "id": "art-369706",
+      "lineIds": [
+        "hurstbridge"
+      ],
+      "fromStation": "heidelberg",
+      "toStation": "hurstbridge",
+      "stations": [
+        "heidelberg",
+        "hurstbridge"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm Friday 2 October to last service Sunday 4 October 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-30pm-friday-2-october-to-last-service-sunday-4-october-2026",
+      "startDate": "2026-10-02",
+      "endDate": "2026-10-04",
+      "startMin": 1230
     },
     {
       "id": "art-368548",
@@ -316,28 +336,9 @@
       "rawText": "Buses replace trains between Parliament and Camberwell Glen Waverley passengers Sunday 27 September to Wednesday 30 September Buses replace trains between Parliament and Camberwell",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
-      "id": "d9li3yc",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-02",
-      "endDate": "2026-09-02",
-      "rawText": "Buses replace trains from Newport to Werribee.",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-09-07T07:34:06.030Z",
+  "fetchedAt": "2026-09-08T21:49:48.254Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
