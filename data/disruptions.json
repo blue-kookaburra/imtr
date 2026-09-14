@@ -1,6 +1,27 @@
 {
   "disruptions": [
     {
+      "id": "art-370084",
+      "lineIds": [
+        "pakenham",
+        "cranbourne"
+      ],
+      "fromStation": "oakleigh",
+      "toStation": "westall",
+      "stations": [
+        "oakleigh",
+        "westall"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 9pm to last service each night, Sunday 4 October to Monday 5 October 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-buses-replace-trains-from-9pm-to-last-service-each-night-sunday-4-october-to-monday-5-october-2026",
+      "startDate": "2026-10-04",
+      "endDate": "2026-10-05",
+      "startMin": 1260
+    },
+    {
       "id": "art-369532",
       "lineIds": [
         "belgrave",
@@ -22,29 +43,6 @@
       "endDate": "2026-09-20",
       "startTs": "2026-09-18T10:30:00.000Z",
       "endTs": "2026-09-19T17:01:00.000Z"
-    },
-    {
-      "id": "art-369533",
-      "lineIds": [
-        "belgrave",
-        "lilydale"
-      ],
-      "fromStation": "box-hill",
-      "toStation": "lilydale",
-      "stations": [
-        "box-hill",
-        "belgrave",
-        "lilydale"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 3am until last service Sunday 20 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-buses-replace-trains-from-3am-until-last-service-sunday-20-september-2026",
-      "startDate": "2026-09-20",
-      "endDate": "2026-09-21",
-      "startTs": "2026-09-19T17:01:00.000Z",
-      "endTs": "2026-09-20T17:00:00.000Z"
     },
     {
       "id": "art-368588",
@@ -108,6 +106,48 @@
       "startDate": "2026-09-27",
       "endDate": "2026-09-30",
       "startMin": 1215
+    },
+    {
+      "id": "art-369841",
+      "lineIds": [
+        "belgrave",
+        "lilydale",
+        "alamein"
+      ],
+      "fromStation": "parliament",
+      "toStation": "burnley",
+      "stations": [
+        "parliament",
+        "burnley"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 5 October to Wednesday 7 October 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-5-october-to-wednesday-7-october-2026",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-07",
+      "startMin": 1230
+    },
+    {
+      "id": "art-369839",
+      "lineIds": [
+        "glen-waverley"
+      ],
+      "fromStation": "richmond",
+      "toStation": "glen-waverley",
+      "stations": [
+        "richmond",
+        "glen-waverley"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 5 October to Wednesday 7 October 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/glen-waverley-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-5-october-to-wednesday-7-october-2026",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-07",
+      "startMin": 1230
     },
     {
       "id": "art-369706",
@@ -205,45 +245,12 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service each night, Monday 28 September to Wednesday 30 September 2026",
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Monday 28 September to Thursday 1 October 2026",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-monday-28-september-to-wednesday-30-september-2026",
       "startDate": "2026-09-28",
-      "endDate": "2026-09-30",
+      "endDate": "2026-10-01",
       "startMin": 1430
-    },
-    {
-      "id": "d1xl9ylt",
-      "lineIds": [
-        "pakenham",
-        "cranbourne"
-      ],
-      "wholeLine": false,
-      "parsed": false,
-      "startDate": "2026-09-07",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between city and Caulfield",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
-    },
-    {
-      "id": "d6zd48d",
-      "lineIds": [
-        "sunbury"
-      ],
-      "fromStation": "footscray",
-      "toStation": "sunshine",
-      "stations": [
-        "footscray",
-        "sunshine"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-06",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between Footscray and Sunshine",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/cranbourne-and-pakenham-line-disruptions"
     },
     {
       "id": "d155b687",
@@ -262,26 +269,23 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
-      "id": "d158z9xv",
+      "id": "d1ben7cq",
       "lineIds": [
-        "sandringham"
-      ],
-      "fromStation": "parliament",
-      "toStation": "elsternwick",
-      "stations": [
-        "parliament",
-        "elsternwick"
+        "belgrave",
+        "lilydale",
+        "alamein",
+        "glen-waverley"
       ],
       "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-09-07",
-      "endDate": "2026-09-09",
-      "rawText": "Buses replace trains between Parliament and Elsternwick",
+      "parsed": false,
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-07",
+      "rawText": "Buses replace trains between Parliament and Burnley Glen Waverley passengers Monday 5 October to Wednesday 7 October Buses replace trains between Richmond and Glen Waverley",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/sandringham-line-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
-      "id": "dpfc2k0",
+      "id": "diex0ot",
       "lineIds": [
         "werribee"
       ],
@@ -293,14 +297,14 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-09-07",
-      "endDate": "2026-09-09",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-08",
       "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-09-13T01:06:15.577Z",
+  "fetchedAt": "2026-09-14T21:30:47.515Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
