@@ -22,134 +22,6 @@
       "startMin": 1260
     },
     {
-      "id": "art-369532",
-      "lineIds": [
-        "belgrave",
-        "lilydale"
-      ],
-      "fromStation": "blackburn",
-      "toStation": "lilydale",
-      "stations": [
-        "blackburn",
-        "belgrave",
-        "lilydale"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm Friday 18 September to 3am Sunday 20 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-friday-18-september-to-3am-sunday-20-september-2026",
-      "startDate": "2026-09-18",
-      "endDate": "2026-09-20",
-      "startTs": "2026-09-18T10:30:00.000Z",
-      "endTs": "2026-09-19T17:01:00.000Z"
-    },
-    {
-      "id": "art-368588",
-      "lineIds": [
-        "belgrave",
-        "lilydale"
-      ],
-      "fromStation": "flinders-street",
-      "toStation": "burnley",
-      "stations": [
-        "flinders-street",
-        "burnley"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Train services start and end at Burnley from 9pm to last service each night, Monday 21 September to Wednesday 23 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/belgrave-and-lilydale-lines-train-services-start-and-end-at-burnley-from-9pm-to-last-service-each-night-monday-21-september-to-wednesday-23-september-2026",
-      "startDate": "2026-09-21",
-      "endDate": "2026-09-23",
-      "startMin": 1260
-    },
-    {
-      "id": "art-369522",
-      "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
-      ],
-      "fromStation": "parliament",
-      "toStation": "camberwell",
-      "stations": [
-        "parliament",
-        "camberwell"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 27 September to Wednesday 30 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-27-september-to-wednesday-30-september-2026",
-      "startDate": "2026-09-27",
-      "endDate": "2026-09-30",
-      "startMin": 1230
-    },
-    {
-      "id": "art-369524",
-      "lineIds": [
-        "glen-waverley"
-      ],
-      "fromStation": "richmond",
-      "toStation": "glen-waverley",
-      "stations": [
-        "richmond",
-        "glen-waverley"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.15pm to last service each night, Sunday 27 September to Wednesday 30 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/glen-waverley-line-buses-replace-trains-from-8-15pm-to-last-service-each-night-sunday-27-september-to-wednesday-30-september-2026",
-      "startDate": "2026-09-27",
-      "endDate": "2026-09-30",
-      "startMin": 1215
-    },
-    {
-      "id": "art-369841",
-      "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
-      ],
-      "fromStation": "parliament",
-      "toStation": "burnley",
-      "stations": [
-        "parliament",
-        "burnley"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 5 October to Wednesday 7 October 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-5-october-to-wednesday-7-october-2026",
-      "startDate": "2026-10-05",
-      "endDate": "2026-10-07",
-      "startMin": 1230
-    },
-    {
-      "id": "art-369839",
-      "lineIds": [
-        "glen-waverley"
-      ],
-      "fromStation": "richmond",
-      "toStation": "glen-waverley",
-      "stations": [
-        "richmond",
-        "glen-waverley"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 5 October to Wednesday 7 October 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/glen-waverley-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-5-october-to-wednesday-7-october-2026",
-      "startDate": "2026-10-05",
-      "endDate": "2026-10-07",
-      "startMin": 1230
-    },
-    {
       "id": "art-369706",
       "lineIds": [
         "hurstbridge"
@@ -168,49 +40,6 @@
       "startDate": "2026-10-02",
       "endDate": "2026-10-04",
       "startMin": 1230
-    },
-    {
-      "id": "art-369081",
-      "lineIds": [
-        "werribee",
-        "williamstown"
-      ],
-      "fromStation": "north-melbourne",
-      "toStation": "williamstown",
-      "stations": [
-        "north-melbourne",
-        "newport",
-        "williamstown"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 13 September to Wednesday 16 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-and-williamstown-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-13-september-to-wednesday-16-september-2026",
-      "startDate": "2026-09-13",
-      "endDate": "2026-09-16",
-      "startMin": 1230
-    },
-    {
-      "id": "art-369122",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 11.45pm to last service on Thursday 17 September 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-on-thursday-17-september-2026",
-      "startDate": "2026-09-17",
-      "endDate": "2026-09-18",
-      "startTs": "2026-09-17T13:45:00.000Z",
-      "endTs": "2026-09-17T17:00:00.000Z"
     },
     {
       "id": "art-368762",
@@ -253,36 +82,44 @@
       "startMin": 1430
     },
     {
-      "id": "d155b687",
+      "id": "d10xl54s",
       "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein",
-        "glen-waverley"
+        "werribee",
+        "williamstown"
+      ],
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
+      "stations": [
+        "north-melbourne",
+        "newport",
+        "williamstown"
       ],
       "wholeLine": false,
-      "parsed": false,
-      "startDate": "2026-09-27",
-      "endDate": "2026-09-30",
-      "rawText": "Buses replace trains between Parliament and Camberwell Glen Waverley passengers Sunday 27 September to Wednesday 30 September Buses replace trains between Parliament and Camberwell",
+      "parsed": true,
+      "startDate": "2026-09-13",
+      "endDate": "2026-09-16",
+      "rawText": "Buses replace trains between North Melbourne, Newport and Williamstown.",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
-      "id": "d1ben7cq",
+      "id": "d1y3ae1c",
       "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein",
-        "glen-waverley"
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
       ],
       "wholeLine": false,
-      "parsed": false,
-      "startDate": "2026-10-05",
-      "endDate": "2026-10-07",
-      "rawText": "Buses replace trains between Parliament and Burnley Glen Waverley passengers Monday 5 October to Wednesday 7 October Buses replace trains between Richmond and Glen Waverley",
+      "parsed": true,
+      "startDate": "2026-09-17",
+      "endDate": "2026-09-17",
+      "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
       "id": "diex0ot",
@@ -304,7 +141,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-09-14T21:30:47.515Z",
+  "fetchedAt": "2026-09-16T22:40:05.025Z",
   "pagesTried": 10,
-  "pagesOk": 10
+  "pagesOk": 7
 }
