@@ -1,67 +1,122 @@
 {
   "disruptions": [
     {
-      "id": "art-369706",
+      "id": "art-371204",
       "lineIds": [
-        "hurstbridge"
+        "werribee"
       ],
-      "fromStation": "heidelberg",
-      "toStation": "hurstbridge",
+      "fromStation": "newport",
+      "toStation": "werribee",
       "stations": [
-        "heidelberg",
-        "hurstbridge"
+        "newport",
+        "werribee"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm Friday 2 October to last service Sunday 4 October 2026",
+      "rawText": "Buses replace trains from 11.50pm to last service each night, Monday 5 October to Thursday 8 October 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-30pm-friday-2-october-to-last-service-sunday-4-october-2026",
-      "startDate": "2026-10-02",
-      "endDate": "2026-10-04",
-      "startMin": 1230
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-monday-5-october-to-thursday-8-october-2026",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-08",
+      "startMin": 1430
     },
     {
-      "id": "art-370714",
+      "id": "d1iygt6h",
       "lineIds": [
-        "hurstbridge"
+        "werribee"
       ],
-      "fromStation": "heidelberg",
-      "toStation": "greensborough",
+      "fromStation": "newport",
+      "toStation": "werribee",
       "stations": [
-        "heidelberg",
-        "greensborough"
+        "newport",
+        "werribee"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 8.30pm Friday 23 October to last service Sunday 25 October 2026",
+      "startDate": "2026-10-12",
+      "endDate": "2026-10-15",
+      "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-30pm-friday-23-october-to-last-service-sunday-25-october-2026",
-      "startDate": "2026-10-23",
-      "endDate": "2026-10-26",
-      "startTs": "2026-10-23T09:30:00.000Z",
-      "endTs": "2026-10-25T16:00:00.000Z"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     },
     {
-      "id": "du1b2f6",
+      "id": "d1g3ppa",
       "lineIds": [
-        "hurstbridge"
+        "werribee"
       ],
-      "fromStation": "parliament",
-      "toStation": "macleod",
+      "fromStation": "newport",
+      "toStation": "werribee",
       "stations": [
-        "parliament",
-        "macleod"
+        "newport",
+        "werribee"
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-10-16",
-      "endDate": "2026-10-16",
-      "rawText": "Buses replace trains between Parliament and Macleod",
+      "startDate": "2026-10-19",
+      "endDate": "2026-10-22",
+      "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/mernda-and-hurstbridge-lines-disruptions"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
+    },
+    {
+      "id": "d1eazzc3",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-10-26",
+      "endDate": "2026-10-29",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
+    },
+    {
+      "id": "d18w5zti",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-11-02",
+      "endDate": "2026-11-02",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
+    },
+    {
+      "id": "dx4g3q2",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-11-04",
+      "endDate": "2026-11-04",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-10-03T06:11:31.781Z",
+  "fetchedAt": "2026-10-06T23:10:35.747Z",
   "pagesTried": 10,
-  "pagesOk": 3
+  "pagesOk": 2
 }
