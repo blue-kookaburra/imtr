@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { stationList } from "@/lib/network/build";
 import type { Station } from "@/lib/types";
 
@@ -30,8 +30,6 @@ export default function StationSearch({ value, onChange }: Props) {
   const [recents, setRecents] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => setRecents(getRecents()), []);
-
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -44,7 +42,11 @@ export default function StationSearch({ value, onChange }: Props) {
     setOpen(false);
     inputRef.current?.blur();
     const next = [s.id, ...getRecents().filter((r) => r !== s.id)].slice(0, 5);
-    localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+    try {
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+    } catch {
+      // Storage unavailable: recents just aren't kept.
+    }
     setRecents(next);
   }
 
@@ -66,7 +68,10 @@ export default function StationSearch({ value, onChange }: Props) {
           setQuery(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setRecents(getRecents());
+          setOpen(true);
+        }}
         className="w-full rounded-xl border border-hairline bg-bg px-4 py-3 text-base font-semibold placeholder:font-normal placeholder:text-ink-faint focus:border-accent focus:outline-none"
       />
       {open && (matches.length > 0 || (query === "" && recents.length > 0)) && (

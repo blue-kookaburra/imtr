@@ -1,11 +1,12 @@
 // Scrapes transport.vic.gov.au planned-works pages via curl (the site's
 // bot protection blocks node's fetch by TLS fingerprint, but allows curl)
-// and writes data/disruptions.json. Run by GitHub Actions every 2 days:
+// and writes data/disruptions.json. Run every 2 days by a local Scheduled Task (scripts/scrape-local.ps1):
 //   npm run scrape
 import { execFileSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import { extractArticleUrls, parseArticle, parsePage } from "../lib/scrape/parse";
+import { supersedes } from "../lib/supersede";
 import type { Disruption } from "../lib/types";
 
 const BASE = "https://transport.vic.gov.au";
@@ -65,8 +66,11 @@ for (const url of urls) {
   ok++;
 }
 
-if (ok === 0) {
-  console.error("FATAL: all line pages failed to fetch");
+// A missing line page would silently drop that line's disruptions from the
+// snapshot — the app would then say "running" for a line we know nothing
+// about. Keep the previous snapshot (and its honest staleness warning) instead.
+if (ok < urls.size) {
+  console.error(`FATAL: only ${ok}/${urls.size} line pages fetched — not overwriting data`);
   process.exit(1);
 }
 
@@ -85,16 +89,8 @@ for (const aUrl of articleUrls) {
   }
 }
 
-// A table row is redundant when an article covers the same lines and dates.
-const kept = [...tableRows.values()].filter(
-  (row) =>
-    !articles.some(
-      (a) =>
-        a.startDate <= row.endDate &&
-        a.endDate >= row.startDate &&
-        row.lineIds.every((id) => a.lineIds.includes(id))
-    )
-);
+// A table row is redundant when an article covers the same works.
+const kept = [...tableRows.values()].filter((row) => !articles.some((a) => supersedes(a, row)));
 
 const out = {
   disruptions: [...articles, ...kept],

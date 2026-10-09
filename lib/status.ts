@@ -20,6 +20,19 @@ function disruptionActiveAt(d: Disruption, t: MelTime, at: Date): boolean {
     if (d.endTs && at > new Date(d.endTs)) return false;
     return true;
   }
+  // A window like 9:30pm–4am crosses midnight: the small hours belong to the
+  // previous night's window. Treating it as start<=t<=end would never match,
+  // a silent all-clear for exactly the overnight works.
+  if (d.startMin !== undefined && d.endMin !== undefined && d.startMin > d.endMin) {
+    if (t.minutes >= d.startMin) return t.dateStr >= d.startDate && t.dateStr <= d.endDate;
+    if (t.minutes <= d.endMin) {
+      const prev = new Date(t.dateStr + "T00:00:00Z");
+      prev.setUTCDate(prev.getUTCDate() - 1);
+      const prevStr = prev.toISOString().slice(0, 10);
+      return prevStr >= d.startDate && prevStr <= d.endDate;
+    }
+    return false;
+  }
   if (t.dateStr < d.startDate || t.dateStr > d.endDate) return false;
   if (d.startMin !== undefined && t.minutes < d.startMin) return false;
   if (d.endMin !== undefined && t.minutes > d.endMin) return false;

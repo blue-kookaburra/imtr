@@ -43,25 +43,37 @@ export default function CalendarScreen() {
 
   const today = useMemo(() => melbourneToday(), []);
   const [view, setView] = useState({ year: today.year, month: today.month });
-  const [data, setData] = useState<CalendarResponse | null>(null);
+  // Keyed by the request it answers, so a slow reply for an old station or
+  // month is never shown against the current one.
+  const [result, setResult] = useState<{ key: string; data: CalendarResponse | null } | null>(null);
   const [selDay, setSelDay] = useState<DayStatus | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const setStation = useCallback(
     (id: string) => router.replace(`/calendar?station=${id}`),
     [router]
   );
 
+  const from = ymd(new Date(Date.UTC(view.year, view.month, 1)));
+  const to = ymd(new Date(Date.UTC(view.year, view.month + 1, 0)));
+  const requestKey = stationId && STATIONS.has(stationId) ? `${stationId}|${from}|${to}` : null;
+
   useEffect(() => {
-    if (!stationId || !STATIONS.has(stationId)) return;
-    const from = ymd(new Date(Date.UTC(view.year, view.month, 1)));
-    const to = ymd(new Date(Date.UTC(view.year, view.month + 1, 0)));
-    setLoading(true);
+    if (!requestKey || !stationId) return;
+    let cancelled = false;
     fetch(`/api/station/${stationId}/calendar?from=${from}&to=${to}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setData(d))
-      .finally(() => setLoading(false));
-  }, [stationId, view]);
+      .catch(() => null)
+      .then((d) => {
+        if (!cancelled) setResult({ key: requestKey, data: d });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [requestKey, stationId, from, to]);
+
+  const loading = requestKey !== null && result?.key !== requestKey;
+  const data = result?.key === requestKey ? result.data : null;
+  const failed = requestKey !== null && !loading && data === null;
 
   const station = stationId ? STATIONS.get(stationId) : null;
   const dayMap = useMemo(
@@ -146,6 +158,12 @@ export default function CalendarScreen() {
                   ›
                 </button>
               </div>
+
+              {failed && (
+                <p className="mt-3 rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
+                  Couldn&apos;t load disruptions for this month. Try again shortly.
+                </p>
+              )}
 
               <div className="mt-3 grid grid-cols-7 gap-1.5 text-center">
                 {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (

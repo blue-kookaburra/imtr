@@ -80,5 +80,5 @@ export function usePanZoom(initial: Transform, kMin = 0.15, kMax = 6) {
   // True if the last gesture was a drag (suppress click-through selection).
   const wasDrag = useCallback(() => moved.current, []);
 
-  return { t, setT, zoomAt, wasDrag, handlers: { onPointerDown, onPointerMove, onPointerUp, onWheel } };
+  return { t, setT, zoomAt, wasDrag, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onWheel } };
 }

@@ -1,16 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { LineId, StatusResponse } from "@/lib/types";
 import { LINE_BY_ID, STATIONS } from "@/lib/network/build";
 import { mapThemeFor } from "@/lib/map/theme";
+import { melbourneInputToDate } from "@/lib/meltz";
 import NetworkMap, { type Selection } from "./NetworkMap";
 import LineChip from "./map/LineChip";
 import TimeBar from "./TimeBar";
 import BottomSheet from "./BottomSheet";
 import DisruptionCard from "./DisruptionCard";
 import StationSheet from "./map/StationSheet";
+
+// localStorage throws in private windows or with blocked site data.
+function readSavedLine(): LineId | null {
+  try {
+    const saved = localStorage.getItem("imtr:line");
+    return saved && LINE_BY_ID.has(saved as LineId) ? (saved as LineId) : null;
+  } catch {
+    return null;
+  }
+}
 
 const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   running: { label: "Running", cls: "text-ok" },
@@ -34,42 +45,58 @@ export default function MapScreen() {
   const [focusedLine, setFocusedLine] = useState<LineId | null>(() => {
     if (initialLine) return LINE_BY_ID.has(initialLine as LineId) ? (initialLine as LineId) : null;
     if (typeof window === "undefined") return null;
-    const saved = localStorage.getItem("imtr:line");
-    return saved && LINE_BY_ID.has(saved as LineId) ? (saved as LineId) : null;
+    return readSavedLine();
   });
+  const [reloadTick, setReloadTick] = useState(0);
 
   // With at === null the theme follows the instant the displayed status was
   // computed for (status.at), so each five-minute refresh rolls it over —
   // no second timer, and theme and map can never disagree about the time
   // being shown. A bare new Date() memoized on [at] would freeze at mount.
   const theme = useMemo(
-    () => mapThemeFor(at ? new Date(at) : status ? new Date(status.at) : new Date()),
+    () => mapThemeFor(at ? melbourneInputToDate(at) : status ? new Date(status.at) : new Date()),
     [at, status]
   );
 
   useEffect(() => {
-    if (focusedLine) localStorage.setItem("imtr:line", focusedLine);
-    else localStorage.removeItem("imtr:line");
+    try {
+      if (focusedLine) localStorage.setItem("imtr:line", focusedLine);
+      else localStorage.removeItem("imtr:line");
+    } catch {
+      // Storage unavailable: the line just isn't remembered.
+    }
   }, [focusedLine]);
 
-  const load = useCallback(async () => {
-    try {
-      const q = at ? `?at=${encodeURIComponent(new Date(at).toISOString())}` : "";
-      const res = await fetch(`/api/status${q}`);
-      if (!res.ok) throw new Error();
-      setStatus(await res.json());
-      setError(false);
-    } catch {
-      setError(true);
-    }
-  }, [at]);
-
+  // The picker value is Melbourne wall-clock time. `cancelled` stops a slow
+  // reply for an old time from overwriting the one now on screen.
   useEffect(() => {
-    load();
-    if (at !== null) return;
-    const id = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(id);
-  }, [load, at]);
+    let cancelled = false;
+    async function load() {
+      try {
+        const q = at ? `?at=${encodeURIComponent(melbourneInputToDate(at).toISOString())}` : "";
+        const res = await fetch(`/api/status${q}`);
+        if (!res.ok) throw new Error();
+        const body = await res.json();
+        if (cancelled) return;
+        setStatus(body);
+        setError(false);
+      } catch {
+        if (!cancelled) setError(true);
+      }
+    }
+    void load();
+    const id = at === null ? setInterval(load, 5 * 60 * 1000) : null;
+    return () => {
+      cancelled = true;
+      if (id !== null) clearInterval(id);
+    };
+  }, [at, reloadTick]);
+
+  // A sheet opened for one moment must not linger once the time changes.
+  function changeAt(next: string | null) {
+    setSel(null);
+    setAt(next);
+  }
 
   const selDisruptions =
     sel && status ? status.disruptions.filter((d) => sel.status.disruptionIds.includes(d.id)) : [];
@@ -77,7 +104,7 @@ export default function MapScreen() {
 
   return (
     <div className="flex h-full flex-col">
-      <TimeBar at={at} onChange={setAt} updatedAt={status?.dataUpdatedAt} stale={status?.stale} />
+      <TimeBar at={at} onChange={changeAt} updatedAt={status?.dataUpdatedAt} stale={status?.stale} />
 
       <div className="relative min-h-0 flex-1">
         <NetworkMap status={status} focusedLine={focusedLine} theme={theme} onSelect={setSel} />
@@ -97,7 +124,7 @@ export default function MapScreen() {
           <div className="absolute inset-x-4 top-4 mx-auto max-w-md">
             <p className="rounded-lg border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad">
               Couldn&apos;t load status.{" "}
-              <button onClick={load} className="font-bold underline cursor-pointer">
+              <button onClick={() => setReloadTick((n) => n + 1)} className="font-bold underline cursor-pointer">
                 Retry
               </button>
             </p>

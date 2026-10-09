@@ -49,8 +49,16 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
     Log "no changes to disruptions.json"
 } else {
-    RunLogged { git commit -m "Refresh disruption data" } | Out-Null
-    RunLogged { git push } | Out-Null
+    $code = RunLogged { git commit -m "Refresh disruption data" }
+    if ($code -ne 0) {
+        Log "git commit failed, aborting"
+        exit 1
+    }
+    $code = RunLogged { git push }
+    if ($code -ne 0) {
+        Log "git push failed -- data is committed locally but NOT deployed"
+        exit 1
+    }
     Log "pushed updated disruptions.json"
 }
 

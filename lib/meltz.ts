@@ -34,3 +34,23 @@ export function melbourneTimeLabel(iso: string): string {
     .replace(/\s/g, "")
     .toLowerCase();
 }
+
+// Today's Melbourne calendar date (YYYY-MM-DD), whatever the server/browser zone.
+export function melbourneToday(now = new Date()): string {
+  return now.toLocaleDateString("en-CA", { timeZone: MEL_TZ });
+}
+
+// A <input type="datetime-local"> value ("2026-07-25T21:00") is a wall-clock
+// time with no zone. This app is about Melbourne, so read it as Melbourne
+// time — not the browser's zone — and return the real instant.
+export function melbourneInputToDate(local: string): Date {
+  const [date, time = "00:00"] = local.split("T");
+  return new Date(melbourneLocalToIso(`${date} ${time.slice(0, 5)}:00`));
+}
+
+// Current Melbourne wall clock as a datetime-local value ("2026-07-25T21:00").
+export function melbourneNowInput(now = new Date()): string {
+  const date = melbourneToday(now);
+  const time = now.toLocaleTimeString("en-GB", { timeZone: MEL_TZ, hour: "2-digit", minute: "2-digit", hour12: false });
+  return `${date}T${time === "24:00" ? "00:00" : time}`;
+}

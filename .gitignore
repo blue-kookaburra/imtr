@@ -43,3 +43,6 @@ next-env.d.ts
 
 .vercel
 scripts/scrape-local.log
+
+.remember/
+scripts/__pycache__/

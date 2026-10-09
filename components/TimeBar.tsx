@@ -2,18 +2,13 @@
 
 import { useRef } from "react";
 import Logo from "./Logo";
+import { melbourneInputToDate, melbourneNowInput } from "@/lib/meltz";
 
 interface Props {
   at: string | null; // datetime-local value, null = now
   onChange: (at: string | null) => void;
   updatedAt?: string;
   stale?: boolean;
-}
-
-function nowLocalValue(): string {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
 }
 
 export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
@@ -62,7 +57,7 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
               ref={pickerRef}
               type="datetime-local"
               aria-label="Show status at a future date and time"
-              min={nowLocalValue()}
+              min={melbourneNowInput()}
               value={at ?? ""}
               onChange={(e) => onChange(e.target.value || null)}
               tabIndex={-1}
@@ -75,7 +70,8 @@ export default function TimeBar({ at, onChange, updatedAt, stale }: Props) {
         <div className="mx-auto mt-2 flex max-w-md items-center gap-2">
           <span className="tabular rounded-md bg-sheet px-2.5 py-1 text-xs text-accent">
             Showing{" "}
-            {new Date(at).toLocaleString("en-AU", {
+            {melbourneInputToDate(at).toLocaleString("en-AU", {
+              timeZone: "Australia/Melbourne",
               weekday: "short",
               day: "numeric",
               month: "short",

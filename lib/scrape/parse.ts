@@ -260,9 +260,9 @@ function matchTimeWindow(text: string): { startMin?: number; endMin?: number } {
   const lower = text.toLowerCase();
   let startMin: number | undefined;
   let endMin: number | undefined;
-  const after = lower.match(/(?:after|from)\s+(\d{1,2}(?:[.:]\d{2})?\s*(?:am|pm))/);
+  const after = lower.match(/\b(?:after|from)\s+(\d{1,2}(?:[.:]\d{2})?\s*(?:am|pm))/);
   if (after) startMin = parseClock(after[1]) ?? undefined;
-  const until = lower.match(/(?:until|before|to)\s+(\d{1,2}(?:[.:]\d{2})?\s*(?:am|pm))/);
+  const until = lower.match(/\b(?:until|before|to)\s+(\d{1,2}(?:[.:]\d{2})?\s*(?:am|pm))/);
   if (until) endMin = parseClock(until[1]) ?? undefined;
   // "Buses replace evening trains" with no explicit time: assume from ~6pm.
   if (startMin === undefined && endMin === undefined && /evening trains/.test(lower)) {
