@@ -7,6 +7,34 @@
     "canterbury": [
       2313,
       1067
+    ],
+    "flinders-street": [
+      1730,
+      1331
+    ],
+    "melbourne-central": [
+      1731,
+      1086
+    ],
+    "parliament": [
+      1804,
+      1129
+    ],
+    "richmond": [
+      1840,
+      1302
+    ],
+    "williamstown": [
+      1038,
+      1332
+    ],
+    "darling": [
+      2311,
+      1520
+    ],
+    "south-yarra": [
+      1893,
+      1356
     ]
   },
   "edges": {
@@ -1878,6 +1906,16 @@
       [
         1975,
         1312
+      ]
+    ],
+    "williamstown:williamstown-beach-williamstown": [
+      [
+        1038,
+        1293
+      ],
+      [
+        1038,
+        1332
       ]
     ]
   }

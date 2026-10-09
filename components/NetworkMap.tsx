@@ -8,7 +8,6 @@ import type { Edge, LineId, SegmentStatus, StationStatus, StatusResponse } from 
 import { usePanZoom } from "./usePanZoom";
 import MapLines from "./map/MapLines";
 import MapStations from "./map/MapStations";
-import MapLabels from "./map/MapLabels";
 
 export type Selection =
   | { kind: "edge"; edge: Edge; status: SegmentStatus }
@@ -50,7 +49,7 @@ export default function NetworkMap({ status, focusedLine, theme, onSelect }: Pro
     const pad = 90;
     const spanX = Math.max(...xs) - Math.min(...xs) + pad * 2;
     const spanY = Math.max(...ys) - Math.min(...ys) + pad * 2;
-    const k = Math.min(w / spanX, h / spanY) * 1.7;
+    const k = Math.min(w / spanX, h / spanY) * 2.4;
     const loop = STATION_XY["flinders-street"];
     setT({ k, x: w / 2 - loop[0] * k, y: h / 2 - loop[1] * k });
   }, [setT]);
@@ -97,8 +96,19 @@ export default function NetworkMap({ status, focusedLine, theme, onSelect }: Pro
             </feMerge>
           </filter>
         </defs>
+        {/* The official map is the picture; everything below is status drawn on
+            top of it. Its geometry shares this frame (the PDF at 3x). */}
+        <image
+          href="/official-map.svg"
+          x={0}
+          y={0}
+          width={MAP_W}
+          height={MAP_H}
+          className="map-art"
+          opacity={focusedLine ? 0.25 : 1}
+        />
         {/* One blur over one grouped layer — the glow never costs per path. */}
-        <g filter={theme === "night" ? "url(#line-glow)" : undefined}>
+        <g>
           <MapLines statusByEdge={statusByEdge} focusedLine={focusedLine} onSelectEdge={handleEdge} />
         </g>
         <MapStations
@@ -106,7 +116,6 @@ export default function NetworkMap({ status, focusedLine, theme, onSelect }: Pro
           focusedLine={focusedLine}
           onSelectStation={handleStation}
         />
-        <MapLabels statusByStation={statusByStation} focusedLine={focusedLine} zoom={t.k} />
       </svg>
 
       <div className="absolute bottom-16 right-3 flex flex-col overflow-hidden rounded-xl border border-hairline bg-elevated/95 backdrop-blur">

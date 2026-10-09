@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { EDGES } from "@/lib/network/build";
+import { LOOP } from "@/lib/network/data";
 import {
   MAP_W,
   MAP_H,
@@ -19,12 +20,6 @@ import {
 // straight teleport. Values are the measured reach; the test allows 2px of
 // drift so a tick cannot silently grow into a teleport.
 const ACCEPTED_LANE_TICKS: Record<string, number> = {
-  "mernda:flinders-street-jolimont": 57.4,
-  "hurstbridge:flinders-street-jolimont": 57.4,
-  "craigieburn:flinders-street-southern-cross": 71.2,
-  "upfield:flinders-street-southern-cross": 71.2,
-  "craigieburn:southern-cross-north-melbourne": 71.2,
-  "upfield:southern-cross-north-melbourne": 71.2,
   "werribee:southern-cross-north-melbourne": 49.1,
   "williamstown:southern-cross-north-melbourne": 49.1,
   "werribee:north-melbourne-south-kensington": 49.1,
@@ -50,7 +45,12 @@ describe("map geometry", () => {
     // snap had to reach: a short reach is the parallel-lane tick the poster
     // itself draws; a long one means the polyline was routed somewhere else
     // entirely and the snap papered over it with a straight teleport.
+    // Edges touching the City Loop ring are skipped: MapLines no longer draws
+    // them (the official artwork underneath already shows the ring), so a long
+    // reach there is invisible.
+    const ringEdges = new Set(EDGES.filter((e) => LOOP.ring.includes(e.from) || LOOP.ring.includes(e.to)).map((e) => e.id));
     const bad = Object.entries(SNAP_DISTANCE)
+      .filter(([id]) => !ringEdges.has(id))
       .filter(([id, d]) => d > (ACCEPTED_LANE_TICKS[id] ?? 0) + 2 && d > 25)
       .map(([id, d]) => `${id} (${d.toFixed(0)}px)`);
     expect(bad).toEqual([]);

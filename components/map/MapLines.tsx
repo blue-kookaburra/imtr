@@ -3,6 +3,7 @@
 import { EDGES, LINE_BY_ID } from "@/lib/network/build";
 import { EDGE_PATH, pathD } from "@/lib/map/geometry";
 import { hitOrder } from "@/lib/map/hit";
+import { LOOP } from "@/lib/network/data";
 import type { Edge, LineId, SegmentStatus } from "@/lib/types";
 
 interface Props {
@@ -11,14 +12,23 @@ interface Props {
   onSelectEdge: (e: Edge) => void;
 }
 
+// Edges touching the City Loop ring. Their polylines are chords between
+// station dots, not the rounded tracks the artwork draws, so redrawing them
+// over the artwork would put a wrong shape on top of a right one. Loop and
+// city-end disruptions are shown on the station dots instead.
+const CBD_STATIONS = new Set(LOOP.ring);
+const touchesCbd = (e: Edge) => CBD_STATIONS.has(e.from) || CBD_STATIONS.has(e.to);
+
 const STROKE = 11;
+// Extra width of the land-coloured mask drawn under a severed segment.
+const MASK = 6;
 
 export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Props) {
   return (
     <g>
       {EDGES.map((e) => {
         const pts = EDGE_PATH[e.id];
-        if (!pts) return null;
+        if (!pts || touchesCbd(e)) return null;
         const line = LINE_BY_ID.get(e.lineId);
         if (!line) return null;
         const d = pathD(pts);
@@ -33,6 +43,8 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
         if (st === "bus-replacement") {
           return (
             <g key={e.id} fill="none" strokeOpacity={o}>
+              {/* Blank the official artwork's solid line so the break reads. */}
+              <path d={d} stroke="var(--map-land)" strokeWidth={w + MASK} strokeLinecap="butt" strokeLinejoin="round" />
               <path
                 d={d}
                 stroke={line.color}
@@ -58,18 +70,23 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
         // just nothing timetabled right now.
         if (st === "no-service") {
           return (
-            <path
-              key={e.id}
-              d={d}
-              fill="none"
-              stroke={line.color}
-              strokeWidth={Math.max(2, w * 0.35)}
-              strokeOpacity={o * 0.45}
-              strokeDasharray="2 14"
-              strokeLinecap="round"
-            />
+            <g key={e.id} fill="none">
+              <path d={d} stroke="var(--map-land)" strokeWidth={w + MASK} strokeLinecap="butt" strokeLinejoin="round" />
+              <path
+                d={d}
+                stroke={line.color}
+                strokeWidth={Math.max(2, w * 0.35)}
+                strokeOpacity={o * 0.45}
+                strokeDasharray="2 14"
+                strokeLinecap="round"
+              />
+            </g>
           );
         }
+
+        // running: the official artwork underneath already draws it.
+        // (With a line focused the artwork dims and that line's stations light up.)
+        if (st === "running") return null;
 
         // warning: full colour plus a halo. Never a blackout, never an
         // all-clear — the fail-visible rule.
@@ -104,7 +121,7 @@ export default function MapLines({ statusByEdge, focusedLine, onSelectEdge }: Pr
           see hitOrder. */}
       {hitOrder(EDGES, focusedLine).map((e) => {
         const pts = EDGE_PATH[e.id];
-        if (!pts) return null;
+        if (!pts || touchesCbd(e)) return null;
         return (
           <path
             key={`hit-${e.id}`}

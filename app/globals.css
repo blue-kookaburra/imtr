@@ -23,22 +23,25 @@
 /* The map canvas answers to the queried time. Line hues never change; only the
    canvas, ink and effects do. */
 .map-theme-day {
-  --map-canvas: #f3efe4;
+  --map-land: #ffffff;
+  --map-canvas: #ebebec;
   --map-station-fill: #ffffff;
   --map-station-stroke: #1f2430;
   --map-label: #1f2430;
 }
 .map-theme-dusk {
-  --map-canvas: #d9d3ce;
+  --map-land: #e6e6e6;
+  --map-canvas: #d4d4d5;
   --map-station-fill: #fdfbf6;
   --map-station-stroke: #2b2f3a;
   --map-label: #2b2f3a;
 }
 .map-theme-night {
-  --map-canvas: #12151c;
-  --map-station-fill: #12151c;
-  --map-station-stroke: #e8e4dc;
-  --map-label: #e8e4dc;
+  --map-land: #b8b8b8;
+  --map-canvas: #a9a9aa;
+  --map-station-fill: #ffffff;
+  --map-station-stroke: #1f2430;
+  --map-label: #1f2430;
 }
 
 @theme inline {
@@ -145,4 +148,14 @@ body {
   .map-canvas {
     transition: none;
   }
+}
+
+/* The artwork is drawn for daylight; dim it for dusk and night. Plain
+   dimming (no inversion) keeps every line's own colour recognisable, and the
+   --map-land masks above are the dimmed land colour. */
+.map-theme-dusk .map-art {
+  filter: brightness(0.9);
+}
+.map-theme-night .map-art {
+  filter: brightness(0.72);
 }

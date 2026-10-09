@@ -209,6 +209,9 @@ function placeLabels(
   return out;
 }
 
+// Reach beyond which an un-overridden polyline is replaced by a straight chord.
+const FAR_SNAP = 60;
+
 function build() {
   // The extractor anchors each station to its OCR'd label, which occasionally
   // lands off the artwork — or, for Footscray, exactly on top of another
@@ -233,7 +236,14 @@ function build() {
     }
     // Hand-authored polylines are authored to land on their stations already,
     // but snapping them is harmless and keeps one code path.
-    const snap = snapEnds(raw, from, to);
+    let snap = snapEnds(raw, from, to);
+    // A polyline dragged this far was routed somewhere else entirely (usually
+    // because an override moved its station). Between adjacent stations a
+    // straight chord is the honest default; hand-author it in overrides (within reach) if the
+    // artwork curves.
+    if (snap.reach > FAR_SNAP) {
+      snap = { pts: [from, to], reach: 0 };
+    }
     edges[e.id] = simplify(snap.pts, 1.5);
     snapped[e.id] = Number(snap.reach.toFixed(1));
     rendered.add(e.from);

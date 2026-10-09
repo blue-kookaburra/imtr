@@ -1,6 +1,6 @@
 "use client";
 
-import { STATIONS } from "@/lib/network/build";
+import { LINE_BY_ID, STATIONS } from "@/lib/network/build";
 import { RENDERED_STATIONS, STATION_ANGLE, STATION_XY } from "@/lib/map/geometry";
 import type { LineId, StationStatus } from "@/lib/types";
 
@@ -49,8 +49,30 @@ export default function MapStations({ statusByStation, focusedLine, onSelectStat
         // `st` — a cut station with an unmapped disruption gets both marks.
         const unmapped = focusedEntry?.unmapped ?? stationStatus?.unmapped ?? false;
 
+        // The artwork already draws every station. Only a station with
+        // something to say gets redrawn on top; the rest keep an invisible tap
+        // target so selection still works.
+        const quiet = st === "normal" && !unmapped && !(focusedLine && !ghosted);
+        if (quiet || st === "no-service") {
+          return (
+            <circle
+              key={s.id}
+              cx={xy[0]}
+              cy={xy[1]}
+              r={HIT_R}
+              fill="transparent"
+              style={{ cursor: "pointer", pointerEvents: "fill" }}
+              onClick={() => onSelectStation(s.id)}
+            />
+          );
+        }
+
         return (
           <g key={s.id} opacity={ghosted ? 0.3 : 1} className="transition-opacity duration-200 motion-reduce:transition-none">
+            {/* Focused line: a halo in the line's colour marks its stations. */}
+            {focusedLine && !ghosted && (
+              <circle cx={xy[0]} cy={xy[1]} r={r + 9} fill={LINE_BY_ID.get(focusedLine)?.color} fillOpacity={0.45} />
+            )}
             {s.interchange && (
               <rect
                 x={xy[0] - CAPSULE_LEN / 2}
@@ -94,12 +116,9 @@ export default function MapStations({ statusByStation, focusedLine, onSelectStat
                   ? "var(--bad)"
                   : st === "boundary"
                     ? "var(--warn)"
-                    : st === "no-service"
-                      ? "none"
-                      : "var(--map-station-fill)"
+                    : "var(--map-station-fill)"
               }
-              stroke={st === "no-service" ? "var(--ink-faint)" : "var(--map-station-stroke)"}
-              strokeOpacity={st === "no-service" ? 0.6 : 1}
+              stroke="var(--map-station-stroke)"
               strokeWidth={s.interchange ? 4 : 3}
             />
             {/* boundary: trains reach this side only, so fill just half. */}
