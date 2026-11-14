@@ -1,53 +1,64 @@
 {
   "disruptions": [
     {
-      "id": "art-373158",
+      "id": "art-374297",
       "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
+        "sunbury"
       ],
-      "fromStation": "parliament",
-      "toStation": "alamein",
-      "stations": [
-        "parliament",
-        "lilydale",
-        "belgrave",
-        "alamein"
-      ],
-      "wholeLine": false,
+      "wholeLine": true,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.15pm to last service each night, Sunday 8 November to Tuesday 10 November 2026",
+      "rawText": "Service changes for part of the journey on Saturday 12 December and Sunday 13 December 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-11-15pm-to-last-service-each-night-sunday-8-november-to-tuesday-10-november-2026",
-      "startDate": "2026-11-08",
-      "endDate": "2026-11-10",
-      "startMin": 1395
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/bendigo-and-echuca-lines-service-changes-for-part-of-the-journey-on-saturday-12-december-and-sunday-13-december-2026",
+      "startDate": "2026-12-12",
+      "endDate": "2026-12-14",
+      "startTs": "2026-12-11T16:00:00.000Z",
+      "endTs": "2026-12-13T16:00:00.000Z"
     },
     {
-      "id": "art-373159",
+      "id": "art-374303",
       "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
+        "sunbury"
       ],
-      "fromStation": "parliament",
-      "toStation": "alamein",
-      "stations": [
-        "parliament",
-        "lilydale",
-        "belgrave",
-        "alamein"
-      ],
-      "wholeLine": false,
+      "wholeLine": true,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.15pm to last service on Thursday 12 November 2026",
+      "rawText": "Coaches replace trains for part of the journey on Saturday 12 December and Sunday 13 December 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-11-15pm-to-last-service-on-thursday-12-november-2026",
-      "startDate": "2026-11-12",
-      "endDate": "2026-11-13",
-      "startTs": "2026-11-12T12:15:00.000Z",
-      "endTs": "2026-11-12T16:00:00.000Z"
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/swan-hill-line-coaches-replace-trains-for-part-of-the-journey-on-saturday-12-december-and-sunday-13-december-2026",
+      "startDate": "2026-12-12",
+      "endDate": "2026-12-14",
+      "startTs": "2026-12-11T16:00:00.000Z",
+      "endTs": "2026-12-13T16:00:00.000Z"
+    },
+    {
+      "id": "art-374305",
+      "lineIds": [
+        "werribee"
+      ],
+      "wholeLine": true,
+      "parsed": true,
+      "rawText": "Service changes from Wednesday night 9 December to last service Sunday 13 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/geelong-line-service-changes-from-wednesday-night-9-december-to-last-service-sunday-13-december-2026",
+      "startDate": "2026-12-09",
+      "endDate": "2026-12-14",
+      "startTs": "2026-12-09T09:00:00.000Z",
+      "endTs": "2026-12-13T16:00:00.000Z"
+    },
+    {
+      "id": "art-374307",
+      "lineIds": [
+        "werribee"
+      ],
+      "wholeLine": true,
+      "parsed": true,
+      "rawText": "Coaches replace trains for part of the journey from Thursday 10 December to Sunday 13 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/warrnambool-line-coaches-replace-trains-for-part-of-the-journey-from-thursday-10-december-to-sunday-13-december-2026",
+      "startDate": "2026-12-10",
+      "endDate": "2026-12-14",
+      "startTs": "2026-12-09T16:00:00.000Z",
+      "endTs": "2026-12-13T16:00:00.000Z"
     },
     {
       "id": "art-373161",
@@ -74,69 +85,76 @@
       "startMin": 1395
     },
     {
-      "id": "art-371747",
+      "id": "art-373798",
       "lineIds": [
-        "werribee"
+        "werribee",
+        "williamstown"
       ],
-      "fromStation": "newport",
-      "toStation": "werribee",
+      "fromStation": "north-melbourne",
+      "toStation": "williamstown",
       "stations": [
-        "newport",
-        "werribee"
+        "north-melbourne",
+        "werribee",
+        "williamstown"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service, Wednesday 4 November 2026",
+      "rawText": "Buses replace trains from 8.50pm Friday 4 December to last service Sunday 6 December 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-wednesday-4-november-2026",
-      "startDate": "2026-11-04",
-      "endDate": "2026-11-05",
-      "startTs": "2026-11-04T12:50:00.000Z",
-      "endTs": "2026-11-04T16:00:00.000Z"
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-and-williamstown-lines-buses-replace-trains-from-8-50pm-friday-4-december-to-last-service-sunday-6-december-2026",
+      "startDate": "2026-12-04",
+      "endDate": "2026-12-07",
+      "startTs": "2026-12-04T09:50:00.000Z",
+      "endTs": "2026-12-06T16:00:00.000Z"
     },
     {
-      "id": "art-371748",
+      "id": "dgvobn9",
       "lineIds": [
-        "werribee"
+        "belgrave",
+        "lilydale",
+        "alamein"
       ],
-      "fromStation": "newport",
-      "toStation": "werribee",
+      "fromStation": "parliament",
+      "toStation": "alamein",
       "stations": [
-        "newport",
-        "werribee"
+        "parliament",
+        "lilydale",
+        "belgrave",
+        "alamein"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service each night, Monday 9 November and Tuesday 10 November 2026",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-each-night-monday-9-november-and-tuesday-10-november-2026",
-      "startDate": "2026-11-09",
+      "startDate": "2026-11-08",
       "endDate": "2026-11-10",
-      "startMin": 1430
-    },
-    {
-      "id": "art-371750",
-      "lineIds": [
-        "werribee"
-      ],
-      "fromStation": "newport",
-      "toStation": "werribee",
-      "stations": [
-        "newport",
-        "werribee"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "rawText": "Buses replace trains from 11.50pm to last service, Thursday 12 November 2026",
+      "rawText": "Buses replace trains between Parliament, Lilydale, Belgrave and Alamein",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/werribee-line-buses-replace-trains-from-11-50pm-to-last-service-thursday-12-november-2026",
-      "startDate": "2026-11-12",
-      "endDate": "2026-11-13",
-      "startTs": "2026-11-12T12:50:00.000Z",
-      "endTs": "2026-11-12T16:00:00.000Z"
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
     },
     {
-      "id": "d18w5zti",
+      "id": "duxwoqa",
+      "lineIds": [
+        "belgrave",
+        "lilydale",
+        "alamein"
+      ],
+      "fromStation": "parliament",
+      "toStation": "alamein",
+      "stations": [
+        "parliament",
+        "lilydale",
+        "belgrave",
+        "alamein"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-11-12",
+      "endDate": "2026-11-12",
+      "rawText": "Buses replace trains between Parliament, Lilydale, Belgrave and Alamein",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
+    },
+    {
+      "id": "d3p5dhg",
       "lineIds": [
         "werribee"
       ],
@@ -148,14 +166,33 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-11-02",
-      "endDate": "2026-11-02",
+      "startDate": "2026-11-09",
+      "endDate": "2026-11-09",
+      "rawText": "Buses replace trains from Newport to Werribee.",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
+    },
+    {
+      "id": "d1rs4y60",
+      "lineIds": [
+        "werribee"
+      ],
+      "fromStation": "newport",
+      "toStation": "werribee",
+      "stations": [
+        "newport",
+        "werribee"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "startDate": "2026-11-12",
+      "endDate": "2026-11-12",
       "rawText": "Buses replace trains from Newport to Werribee.",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-11-04T04:45:39.795Z",
+  "fetchedAt": "2026-11-14T06:12:27.502Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
