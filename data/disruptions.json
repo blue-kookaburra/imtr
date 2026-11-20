@@ -31,6 +31,110 @@
       "endTs": "2026-12-13T16:00:00.000Z"
     },
     {
+      "id": "art-374266",
+      "lineIds": [
+        "pakenham",
+        "cranbourne"
+      ],
+      "fromStation": "caulfield",
+      "toStation": "dandenong",
+      "stations": [
+        "caulfield",
+        "dandenong"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Sunday 29 November to Wednesday 2 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-buses-replace-trains-from-8-30pm-to-last-service-each-night-sunday-29-november-to-wednesday-2-december-2026",
+      "startDate": "2026-11-29",
+      "endDate": "2026-12-02",
+      "startMin": 1230
+    },
+    {
+      "id": "art-374267",
+      "lineIds": [
+        "pakenham"
+      ],
+      "fromStation": "dandenong",
+      "toStation": "east-pakenham",
+      "stations": [
+        "dandenong",
+        "east-pakenham"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 12.30am Saturday 5 December to last service Sunday 6 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/pakenham-line-buses-replace-trains-from-12-30am-saturday-5-december-to-last-service-sunday-6-december-2",
+      "startDate": "2026-12-05",
+      "endDate": "2026-12-07",
+      "startTs": "2026-12-04T13:30:00.000Z",
+      "endTs": "2026-12-06T16:00:00.000Z"
+    },
+    {
+      "id": "art-374439",
+      "lineIds": [
+        "pakenham",
+        "cranbourne"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "south-yarra",
+      "stations": [
+        "flinders-street",
+        "south-yarra"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Train services start and end at South Yarra from 8.30pm to last service each night, Tuesday 8 December and Wednesday 9 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/cranbourne-and-pakenham-lines-train-services-start-and-end-at-south-yarra-from-8-30pm-to-last-service-each-night-tuesday-8-december-and-wednesday-9-december-2026",
+      "startDate": "2026-12-08",
+      "endDate": "2026-12-09",
+      "startMin": 1230
+    },
+    {
+      "id": "art-374440",
+      "lineIds": [
+        "sunbury"
+      ],
+      "fromStation": "flinders-street",
+      "toStation": "footscray",
+      "stations": [
+        "flinders-street",
+        "footscray"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Train services start and end at Footscray from 8.30pm to last service each night, Tuesday 8 December and Wednesday 9 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sunbury-line-train-services-start-and-end-at-footscray-from-8-30pm-to-last-service-each-night-tuesday-8-december-and-wednesday-9-december-2026",
+      "startDate": "2026-12-08",
+      "endDate": "2026-12-09",
+      "startMin": 1230
+    },
+    {
+      "id": "art-374324",
+      "lineIds": [
+        "sunbury"
+      ],
+      "fromStation": "west-footscray",
+      "toStation": "watergardens",
+      "stations": [
+        "west-footscray",
+        "watergardens"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 11.30pm Friday 11 December to last service Sunday 13 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/sunbury-line-buses-replace-trains-from-11-30pm-friday-11-december-to-last-service-sunday-13-december-2026",
+      "startDate": "2026-12-11",
+      "endDate": "2026-12-14",
+      "startTs": "2026-12-11T12:30:00.000Z",
+      "endTs": "2026-12-13T16:00:00.000Z"
+    },
+    {
       "id": "art-374305",
       "lineIds": [
         "werribee"
@@ -61,28 +165,64 @@
       "endTs": "2026-12-13T16:00:00.000Z"
     },
     {
-      "id": "art-373161",
+      "id": "art-374714",
       "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
+        "hurstbridge"
       ],
-      "fromStation": "parliament",
-      "toStation": "alamein",
+      "fromStation": "heidelberg",
+      "toStation": "greensborough",
       "stations": [
-        "parliament",
-        "lilydale",
-        "belgrave",
-        "alamein"
+        "heidelberg",
+        "greensborough"
       ],
       "wholeLine": false,
       "parsed": true,
-      "rawText": "Buses replace trains from 11.15pm to last service each night, Sunday 15 November to Thursday 19 November 2026",
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Wednesday 2 December to Thursday 3 December 2026",
       "source": "planned-works",
-      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/alamein-belgrave-and-lilydale-lines-buses-replace-trains-from-11-15pm-to-last-service-each-night-sunday-15-november-to-thursday-19-november-2026",
-      "startDate": "2026-11-15",
-      "endDate": "2026-11-19",
-      "startMin": 1395
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-wednesday-2-december-to-thursday-3-december-2026",
+      "startDate": "2026-12-02",
+      "endDate": "2026-12-03",
+      "startMin": 1230
+    },
+    {
+      "id": "art-374272",
+      "lineIds": [
+        "hurstbridge"
+      ],
+      "fromStation": "parliament",
+      "toStation": "macleod",
+      "stations": [
+        "parliament",
+        "macleod"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.45pm to last service each night, Monday 7 December to Wednesday 9 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/hurstbridge-line-buses-replace-trains-from-8-45pm-to-last-service-each-night-monday-7-december-to-wednesday-9-december-2026",
+      "startDate": "2026-12-07",
+      "endDate": "2026-12-08",
+      "startMin": 1245
+    },
+    {
+      "id": "art-374552",
+      "lineIds": [
+        "mernda"
+      ],
+      "fromStation": "parliament",
+      "toStation": "reservoir",
+      "stations": [
+        "parliament",
+        "reservoir"
+      ],
+      "wholeLine": false,
+      "parsed": true,
+      "rawText": "Buses replace trains from 8.30pm to last service each night, Monday 7 December to Wednesday 9 December 2026",
+      "source": "planned-works",
+      "url": "https://transport.vic.gov.au/disruptions/disruptions-information/article/mernda-line-buses-replace-trains-from-8-30pm-to-last-service-each-night-monday-7-december-to-wednesday-9-december-2026",
+      "startDate": "2026-12-07",
+      "endDate": "2026-12-09",
+      "startMin": 1230
     },
     {
       "id": "art-373798",
@@ -108,7 +248,7 @@
       "endTs": "2026-12-06T16:00:00.000Z"
     },
     {
-      "id": "dgvobn9",
+      "id": "d3fi0yk",
       "lineIds": [
         "belgrave",
         "lilydale",
@@ -124,31 +264,8 @@
       ],
       "wholeLine": false,
       "parsed": true,
-      "startDate": "2026-11-08",
-      "endDate": "2026-11-10",
-      "rawText": "Buses replace trains between Parliament, Lilydale, Belgrave and Alamein",
-      "source": "planned-works",
-      "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
-    },
-    {
-      "id": "duxwoqa",
-      "lineIds": [
-        "belgrave",
-        "lilydale",
-        "alamein"
-      ],
-      "fromStation": "parliament",
-      "toStation": "alamein",
-      "stations": [
-        "parliament",
-        "lilydale",
-        "belgrave",
-        "alamein"
-      ],
-      "wholeLine": false,
-      "parsed": true,
-      "startDate": "2026-11-12",
-      "endDate": "2026-11-12",
+      "startDate": "2026-11-15",
+      "endDate": "2026-11-19",
       "rawText": "Buses replace trains between Parliament, Lilydale, Belgrave and Alamein",
       "source": "planned-works",
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/belgrave-lilydale-and-alamein-lines-disruptions"
@@ -192,7 +309,7 @@
       "url": "https://transport.vic.gov.au/plan-a-journey/planned-works/werribee-and-williamstown-lines-disruptions"
     }
   ],
-  "fetchedAt": "2026-11-14T06:12:27.502Z",
+  "fetchedAt": "2026-11-20T03:04:34.223Z",
   "pagesTried": 10,
   "pagesOk": 10
 }
